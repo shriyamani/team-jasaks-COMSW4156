@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: jasaks-postgres
+    environment:
+      POSTGRES_DB: jasaks
+      POSTGRES_USER: jasaks
+      POSTGRES_PASSWORD: jasaks
+    ports:
+      - "5433:5432"
+    volumes:
+      - jasaks-data:/var/lib/postgresql/data
+
+volumes:
+  jasaks-data:
