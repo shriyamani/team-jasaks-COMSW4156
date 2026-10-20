@@ -18,4 +18,17 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     boolean hasOverlap(@Param("spaceId") Long spaceId,
                      @Param("start") LocalDateTime start,
                      @Param("end") LocalDateTime end);
+
+    @Query("""
+        SELECT COUNT(r) > 0 from Reservation r
+        WHERE r.space.spaceId = :spaceId
+            AND r.reservationId <> :excludeId
+            AND r.status <> com.jasaks.model.ReservationStatus.CANCELLED
+            AND r.startTime < :end
+            AND r.endTime > :start
+    """)
+    boolean hasOverlapExcluding(@Param("spaceId") Long spaceId,
+                       @Param("start") LocalDateTime start,
+                       @Param("end") LocalDateTime end,
+                       @Param("excludeId") Long excludeId);
 }

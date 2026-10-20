@@ -12,13 +12,24 @@ import jakarta.validation.constraints.PositiveOrZero;
 import java.time.LocalTime;
 
 @Entity
-@Table(name="places")
+@Table(name = "places")
 public class Place {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long placeId;
 
     private String name;
+
+    /**
+     * The timezone that the Place you are creating is in (eg. "America/New_York")
+     * When writing API endpoints, server should calculate "now()" time using this field
+     * to avoid server (UTC) and place time zone mismatches. Make sure the server is
+     * calculating now() in timeZone, not in UTC.
+     *
+     * LocalDateTime now = LocalDateTime.now(ZoneId.of(place.getTimeZone()));
+     */
+    @Column(nullable = false)
+    private String timeZone;
 
     @Column(nullable = false)
     private LocalTime openTime;
@@ -35,8 +46,10 @@ public class Place {
 
     protected Place() {}
 
-    public Place(String name, LocalTime openTime, LocalTime closeTime, int refundHours, int refundPercent) {
+    public Place(String name, String timeZone, LocalTime openTime, LocalTime closeTime, int refundHours,
+                 int refundPercent) {
         this.name = name;
+        this.timeZone = timeZone;
         this.openTime = openTime;
         this.closeTime = closeTime;
         this.refundHours = refundHours;
@@ -49,6 +62,10 @@ public class Place {
 
     public String getName() {
         return name;
+    }
+
+    public String getTimeZone() {
+        return timeZone;
     }
 
     public LocalTime getOpenTime() {

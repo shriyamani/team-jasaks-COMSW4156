@@ -16,6 +16,7 @@ import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.persistence.PrePersist;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 /**
@@ -30,7 +31,7 @@ public class Reservation {
     private Long reservationId;
 
     @Column(nullable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @Column(nullable = false)
     private LocalDateTime startTime;
@@ -73,7 +74,7 @@ public class Reservation {
         return reservationId;
     }
 
-    public LocalDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
@@ -131,6 +132,6 @@ public class Reservation {
 
     @PrePersist
     public void onCreate() {
-        this.createdAt = LocalDateTime.now();
+        this.createdAt = Instant.now();
     }
 }
