@@ -1,0 +1,35 @@
+package com.jasaks.model;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import jakarta.persistence.Id;
+
+@Entity
+@Table(name="bookers")
+public class Booker {
+    @Id
+    @Column(nullable = false)
+    private String bookerId;
+
+    private String name;
+
+    protected Booker() {}
+
+    public Booker(String bookerId, String name) {
+        this.bookerId = bookerId;
+        this.name = name;
+    }
+
+    public String getBookerId() {
+        return bookerId;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+}
