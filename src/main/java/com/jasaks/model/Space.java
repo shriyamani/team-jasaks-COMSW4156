@@ -58,6 +58,10 @@ public class Space {
         return place;
     }
 
+    public void setPlace(Place place) {
+        this.place = place;
+    }
+
     public String getSpaceName() {
         return spaceName;
     }
