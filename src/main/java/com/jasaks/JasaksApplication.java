@@ -4,10 +4,17 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class JasaksApplication {
+public final class JasaksApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(JasaksApplication.class, args);
-	}
+    private JasaksApplication() {
+    }
 
+    /**
+     * Application entry point.
+     *
+     * @param args command line arguments
+     */
+    public static void main(final String[] args) {
+        SpringApplication.run(JasaksApplication.class, args);
+    }
 }
