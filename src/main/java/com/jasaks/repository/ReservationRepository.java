@@ -8,6 +8,8 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDateTime;
 
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
+    boolean existsBySpace_SpaceId(Long spaceId);
+
     @Query("""
         SELECT COUNT(r) > 0 from Reservation r
         WHERE r.space.spaceId = :spaceId
