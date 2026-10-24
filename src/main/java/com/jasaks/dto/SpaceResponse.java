@@ -22,7 +22,7 @@ public record SpaceResponse(
         return new SpaceResponse(
                 space.getSpaceId(),
                 space.getPlace().getPlaceId(),
-                space.getPlace().getName(),
+                space.getPlace().getPlaceName(),
                 space.getSpaceName(),
                 space.getCapacity(),
                 space.getHourlyRate(),
