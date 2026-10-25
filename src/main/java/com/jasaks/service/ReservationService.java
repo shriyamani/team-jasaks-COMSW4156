@@ -1,17 +1,20 @@
 package com.jasaks.service;
 
+import com.jasaks.dto.ReservationResponse;
 import com.jasaks.model.Reservation;
 import com.jasaks.repository.ReservationRepository;
 import java.time.LocalDateTime;
 import java.util.List;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * Service class providing business logic for reservations.
  */
 @Service
-public final class ReservationService {
+public class ReservationService {
 
     /**
      * Repository for reservation database access.
@@ -36,31 +39,33 @@ public final class ReservationService {
      * @param endDate the optional end date filter
      * @param placeId the optional place ID filter
      * @param spaceId the optional space ID filter
-     * @return list of matching reservations
+     * @return list of matching reservation responses
      */
     @Transactional(readOnly = true)
-    public List<Reservation> listUserReservations(
+    public List<ReservationResponse> listUserReservations(
             final String userId,
             final LocalDateTime startDate,
             final LocalDateTime endDate,
             final Long placeId,
             final Long spaceId) {
         if (userId == null || userId.isBlank()) {
-            throw new IllegalArgumentException(
-                    "User ID cannot be null or blank");
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "User ID cannot be null or blank");
         }
         if (startDate != null && endDate != null
                 && startDate.isAfter(endDate)) {
-            throw new IllegalArgumentException(
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
                     "Start date cannot be after end date");
         }
 
-        List<Reservation> reservations =
+        final List<Reservation> reservations =
                 reservationRepository.findByBookerBookerId(userId);
 
         return reservations.stream()
                 .filter(reservation -> matchesFilter(
                         reservation, startDate, endDate, placeId, spaceId))
+                .map(ReservationResponse::from)
                 .toList();
     }
 
@@ -81,11 +86,11 @@ public final class ReservationService {
             final Long placeId,
             final Long spaceId) {
         if (startDate != null
-                && reservation.getStartTime().isBefore(startDate)) {
+                && !reservation.getEndTime().isAfter(startDate)) {
             return false;
         }
         if (endDate != null
-                && reservation.getStartTime().isAfter(endDate)) {
+                && !reservation.getStartTime().isBefore(endDate)) {
             return false;
         }
         if (placeId != null) {

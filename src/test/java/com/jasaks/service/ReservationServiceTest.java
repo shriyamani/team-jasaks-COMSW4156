@@ -5,13 +5,14 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
+import com.jasaks.dto.ReservationResponse;
 import com.jasaks.model.Booker;
 import com.jasaks.model.Place;
 import com.jasaks.model.Reservation;
 import com.jasaks.model.Space;
 import com.jasaks.repository.ReservationRepository;
-import java.math.BigDecimal;
 import java.lang.reflect.Field;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.HashSet;
@@ -22,6 +23,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * Unit tests for ReservationService core functionality.
@@ -114,16 +117,18 @@ public final class ReservationServiceTest {
         when(reservationRepository.findByBookerBookerId("jsw2219"))
                 .thenReturn(List.of(reservationOne, reservationTwo));
 
-        final List<Reservation> results =
+        final List<ReservationResponse> results =
                 reservationService.listUserReservations(
                         "jsw2219", null, null, null, null);
 
         assertNotNull(results);
         assertEquals(2, results.size());
+        assertEquals(100L, results.get(0).reservationId());
+        assertEquals(200L, results.get(1).reservationId());
     }
 
     /**
-     * Tests filtering reservations by date range.
+     * Tests filtering reservations by date range with overlap logic.
      */
     @Test
     public void testListReservationsFilterByDate() {
@@ -131,12 +136,23 @@ public final class ReservationServiceTest {
                 .thenReturn(List.of(reservationOne, reservationTwo));
 
         final LocalDateTime start = LocalDateTime.of(2026, 11, 10, 0, 0);
-        final List<Reservation> results =
+        final List<ReservationResponse> results =
                 reservationService.listUserReservations(
                         "jsw2219", start, null, null, null);
 
         assertEquals(1, results.size());
-        assertEquals(200L, results.get(0).getReservationId());
+        assertEquals(200L, results.get(0).reservationId());
+
+        final LocalDateTime overlapStart =
+                LocalDateTime.of(2026, 11, 1, 11, 0);
+        final LocalDateTime overlapEnd =
+                LocalDateTime.of(2026, 11, 1, 13, 0);
+        final List<ReservationResponse> overlapResults =
+                reservationService.listUserReservations(
+                        "jsw2219", overlapStart, overlapEnd, null, null);
+
+        assertEquals(1, overlapResults.size());
+        assertEquals(100L, overlapResults.get(0).reservationId());
     }
 
     /**
@@ -147,27 +163,33 @@ public final class ReservationServiceTest {
         when(reservationRepository.findByBookerBookerId("jsw2219"))
                 .thenReturn(List.of(reservationOne, reservationTwo));
 
-        final List<Reservation> results =
+        final List<ReservationResponse> results =
                 reservationService.listUserReservations(
                         "jsw2219", null, null, 1L, 10L);
 
         assertEquals(1, results.size());
-        assertEquals(100L, results.get(0).getReservationId());
+        assertEquals(100L, results.get(0).reservationId());
     }
 
     /**
-     * Tests that invalid inputs throw IllegalArgumentException.
+     * Tests that invalid inputs throw ResponseStatusException.
      */
     @Test
     public void testListReservationsInvalidInput() {
-        assertThrows(IllegalArgumentException.class, () ->
-                reservationService.listUserReservations(
-                        "", null, null, null, null));
+        final ResponseStatusException blankIdException =
+                assertThrows(ResponseStatusException.class, () ->
+                        reservationService.listUserReservations(
+                                "", null, null, null, null));
+        assertEquals(HttpStatus.BAD_REQUEST,
+                blankIdException.getStatusCode());
 
         final LocalDateTime start = LocalDateTime.of(2026, 12, 1, 0, 0);
         final LocalDateTime end = LocalDateTime.of(2026, 11, 1, 0, 0);
-        assertThrows(IllegalArgumentException.class, () ->
-                reservationService.listUserReservations(
-                        "jsw2219", start, end, null, null));
+        final ResponseStatusException dateOrderException =
+                assertThrows(ResponseStatusException.class, () ->
+                        reservationService.listUserReservations(
+                                "jsw2219", start, end, null, null));
+        assertEquals(HttpStatus.BAD_REQUEST,
+                dateOrderException.getStatusCode());
     }
 }
