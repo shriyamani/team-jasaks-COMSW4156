@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
     boolean existsBySpace_SpaceId(Long spaceId);
@@ -33,4 +34,6 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
                        @Param("start") LocalDateTime start,
                        @Param("end") LocalDateTime end,
                        @Param("excludeId") Long excludeId);
+
+    List<Reservation> findBySpaceSpaceId(Long spaceId);
 }
