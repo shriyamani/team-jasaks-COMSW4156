@@ -11,6 +11,12 @@ import java.util.Set;
 
 /**
  * Payload for creating or replacing a space.
+ *
+ * @param spaceName name of the space
+ * @param capacity maximum number of people the space holds
+ * @param hourlyRate hourly rental rate for the space
+ * @param amenities amenities available in the space
+ * @param placeId identifier of the place containing the space
  */
 public record SpaceRequest(
         @NotBlank(message = "spaceName is required")
@@ -28,7 +34,12 @@ public record SpaceRequest(
         @NotNull(message = "placeId is required")
         Long placeId
 ) {
+    /**
+     * Creates a request and defensively copies the amenities.
+     */
     public SpaceRequest {
-        amenities = amenities == null ? new HashSet<>() : new HashSet<>(amenities);
+        amenities = amenities == null
+                ? new HashSet<>()
+                : new HashSet<>(amenities);
     }
 }
