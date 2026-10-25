@@ -10,7 +10,6 @@ import com.jasaks.dto.SpaceReportResponse;
 import com.jasaks.model.Booker;
 import com.jasaks.model.Place;
 import com.jasaks.model.Reservation;
-import com.jasaks.model.ReservationStatus;
 import com.jasaks.model.Space;
 import com.jasaks.repository.PlaceRepository;
 import com.jasaks.repository.ReservationRepository;
@@ -104,7 +103,7 @@ public final class ReportServiceTest {
     }
 
     /**
-     * Sets up test sample data.
+     * Sets up sample test data.
      *
      * @throws Exception if reflection fails
      */
@@ -114,11 +113,11 @@ public final class ReportServiceTest {
                 LocalTime.of(8, 0), LocalTime.of(20, 0), 2, 50);
         setField(place, "placeId", 1L);
 
-        spaceOne = new Space(place, "Room 209", 10,
+        spaceOne = new Space(place, "Study Room 101", 10,
                 BigDecimal.valueOf(25.0), new HashSet<>());
         setField(spaceOne, "spaceId", 10L);
 
-        spaceTwo = new Space(place, "Room 301", 20,
+        spaceTwo = new Space(place, "Conference Room", 20,
                 BigDecimal.valueOf(50.0), new HashSet<>());
         setField(spaceTwo, "spaceId", 20L);
 
@@ -142,13 +141,14 @@ public final class ReportServiceTest {
      */
     @Test
     public void testGenerateSpaceReportSingleSpace() {
-        when(placeRepository.findById(1L)).thenReturn(Optional.of(place));
-        when(spaceRepository.findById(10L)).thenReturn(Optional.of(spaceOne));
-        when(reservationRepository.findBySpaceSpaceId(10L))
-                .thenReturn(List.of(reservationOne, reservationTwo));
-
         final LocalDateTime start = LocalDateTime.of(2026, 11, 1, 0, 0);
         final LocalDateTime end = LocalDateTime.of(2026, 11, 2, 0, 0);
+
+        when(placeRepository.findById(1L)).thenReturn(Optional.of(place));
+        when(spaceRepository.findById(10L)).thenReturn(Optional.of(spaceOne));
+        when(reservationRepository.findActiveReservationsInWindow(
+                10L, start, end))
+                .thenReturn(List.of(reservationOne, reservationTwo));
 
         final SpaceReportResponse response = reportService.generateSpaceReport(
                 1L, 10L, start, end);
@@ -162,7 +162,9 @@ public final class ReportServiceTest {
         assertEquals(4.0, metrics.totalBookedHours());
         assertEquals(2.0, metrics.averageDurationHours());
         assertEquals(5.0, metrics.averageGroupSize());
-        assertEquals(50.0, metrics.occupancyRate());
+        assertEquals(50.0, metrics.averageCapacityUsed());
+        assertEquals("10:00", metrics.peakBookingHour());
+        assertEquals("2026-11-01", metrics.peakBookingDate());
         assertEquals(new BigDecimal("100.0"), metrics.totalRevenue());
     }
 
@@ -171,16 +173,18 @@ public final class ReportServiceTest {
      */
     @Test
     public void testGenerateSpaceReportAllSpaces() {
+        final LocalDateTime start = LocalDateTime.of(2026, 11, 1, 0, 0);
+        final LocalDateTime end = LocalDateTime.of(2026, 11, 2, 0, 0);
+
         when(placeRepository.findById(1L)).thenReturn(Optional.of(place));
         when(spaceRepository.findByPlace_PlaceId(1L))
                 .thenReturn(List.of(spaceOne, spaceTwo));
-        when(reservationRepository.findBySpaceSpaceId(10L))
+        when(reservationRepository.findActiveReservationsInWindow(
+                10L, start, end))
                 .thenReturn(List.of(reservationOne));
-        when(reservationRepository.findBySpaceSpaceId(20L))
+        when(reservationRepository.findActiveReservationsInWindow(
+                20L, start, end))
                 .thenReturn(Collections.emptyList());
-
-        final LocalDateTime start = LocalDateTime.of(2026, 11, 1, 0, 0);
-        final LocalDateTime end = LocalDateTime.of(2026, 11, 2, 0, 0);
 
         final SpaceReportResponse response = reportService.generateSpaceReport(
                 1L, null, start, end);
@@ -195,13 +199,14 @@ public final class ReportServiceTest {
      */
     @Test
     public void testGenerateSpaceReportNoReservations() {
-        when(placeRepository.findById(1L)).thenReturn(Optional.of(place));
-        when(spaceRepository.findById(10L)).thenReturn(Optional.of(spaceOne));
-        when(reservationRepository.findBySpaceSpaceId(10L))
-                .thenReturn(Collections.emptyList());
-
         final LocalDateTime start = LocalDateTime.of(2026, 11, 1, 0, 0);
         final LocalDateTime end = LocalDateTime.of(2026, 11, 2, 0, 0);
+
+        when(placeRepository.findById(1L)).thenReturn(Optional.of(place));
+        when(spaceRepository.findById(10L)).thenReturn(Optional.of(spaceOne));
+        when(reservationRepository.findActiveReservationsInWindow(
+                10L, start, end))
+                .thenReturn(Collections.emptyList());
 
         final SpaceReportResponse response = reportService.generateSpaceReport(
                 1L, 10L, start, end);

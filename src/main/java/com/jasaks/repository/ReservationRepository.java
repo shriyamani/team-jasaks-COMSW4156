@@ -35,5 +35,15 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
                        @Param("end") LocalDateTime end,
                        @Param("excludeId") Long excludeId);
 
-    List<Reservation> findBySpaceSpaceId(Long spaceId);
+    @Query("""
+        SELECT r from Reservation r
+        WHERE r.space.spaceId = :spaceId
+            AND r.status <> com.jasaks.model.ReservationStatus.CANCELLED
+            AND r.startTime < :end
+            AND r.endTime > :start
+    """)
+    List<Reservation> findActiveReservationsInWindow(
+            @Param("spaceId") Long spaceId,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end);
 }

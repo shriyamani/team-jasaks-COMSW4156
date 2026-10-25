@@ -4,7 +4,6 @@ import com.jasaks.dto.SpaceMetrics;
 import com.jasaks.dto.SpaceReportResponse;
 import com.jasaks.model.Place;
 import com.jasaks.model.Reservation;
-import com.jasaks.model.ReservationStatus;
 import com.jasaks.model.Space;
 import com.jasaks.repository.PlaceRepository;
 import com.jasaks.repository.ReservationRepository;
@@ -18,6 +17,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,7 +28,13 @@ import org.springframework.web.server.ResponseStatusException;
  * Service class for computing space usage metrics and reports.
  */
 @Service
-public final class ReportService {
+public class ReportService {
+
+    /**
+     * Logger for report service messages.
+     */
+    private static final Logger LOGGER =
+            LoggerFactory.getLogger(ReportService.class);
 
     /**
      * Scale for rounding double metric values.
@@ -166,14 +173,9 @@ public final class ReportService {
             final Place place,
             final LocalDateTime startDate,
             final LocalDateTime endDate) {
-        final List<Reservation> allReservations =
-                reservationRepository.findBySpaceSpaceId(space.getSpaceId());
-
-        final List<Reservation> activeReservations = allReservations.stream()
-                .filter(r -> r.getStatus() != ReservationStatus.CANCELLED)
-                .filter(r -> r.getStartTime().isBefore(endDate)
-                        && r.getEndTime().isAfter(startDate))
-                .toList();
+        final List<Reservation> activeReservations =
+                reservationRepository.findActiveReservationsInWindow(
+                        space.getSpaceId(), startDate, endDate);
 
         final int totalReservations = activeReservations.size();
         double totalBookedHours = 0.0;
@@ -219,10 +221,15 @@ public final class ReportService {
                 1.0, totalPeriodMinutes / MINUTES_IN_DAY);
         final double totalAvailableHours = dailyOperatingHours * periodDays;
 
-        final double utilizationPercentage = totalAvailableHours > 0.0
-                ? Math.min(MAX_PERCENTAGE,
-                (totalBookedHours / totalAvailableHours) * MAX_PERCENTAGE)
+        final double rawUtilization = totalAvailableHours > 0.0
+                ? (totalBookedHours / totalAvailableHours) * MAX_PERCENTAGE
                 : 0.0;
+        if (rawUtilization > MAX_PERCENTAGE) {
+            LOGGER.warn("Space {} utilization exceeded 100%: {}%",
+                    space.getSpaceId(), rawUtilization);
+        }
+        final double utilizationPercentage =
+                Math.min(MAX_PERCENTAGE, rawUtilization);
 
         final String peakBookingHour = findPeakKey(hourCounts, true);
         final String peakBookingDate = findPeakKey(dateCounts, false);
@@ -230,11 +237,16 @@ public final class ReportService {
         final double averageGroupSize = totalReservations > 0
                 ? (double) totalGroupSize / totalReservations : 0.0;
 
-        final double occupancyRate = (space.getCapacity() > 0
+        final double rawCapacityUsed = (space.getCapacity() > 0
                 && totalReservations > 0)
-                ? Math.min(MAX_PERCENTAGE,
-                (averageGroupSize / space.getCapacity()) * MAX_PERCENTAGE)
+                ? (averageGroupSize / space.getCapacity()) * MAX_PERCENTAGE
                 : 0.0;
+        if (rawCapacityUsed > MAX_PERCENTAGE) {
+            LOGGER.warn("Space {} capacity usage exceeded 100%: {}%",
+                    space.getSpaceId(), rawCapacityUsed);
+        }
+        final double averageCapacityUsed =
+                Math.min(MAX_PERCENTAGE, rawCapacityUsed);
 
         return new SpaceMetrics(
                 space.getSpaceId(),
@@ -246,7 +258,7 @@ public final class ReportService {
                 peakBookingHour,
                 peakBookingDate,
                 roundDouble(averageGroupSize),
-                roundDouble(occupancyRate),
+                roundDouble(averageCapacityUsed),
                 totalRevenue);
     }
 
@@ -277,14 +289,14 @@ public final class ReportService {
     }
 
     /**
-     * Finds the peak key from a frequency map.
+     * Finds the peak key from a frequency map breaking ties with lowest key.
      *
-     * @param <T> the key type
+     * @param <T> the comparable key type
      * @param countMap the frequency count map
      * @param isHour whether the key represents an hour
      * @return formatted peak key string or N/A
      */
-    private <T> String findPeakKey(
+    private <T extends Comparable<? super T>> String findPeakKey(
             final Map<T, Integer> countMap,
             final boolean isHour) {
         if (countMap == null || countMap.isEmpty()) {
@@ -293,8 +305,12 @@ public final class ReportService {
         T peakKey = null;
         int maxCount = -1;
         for (final Map.Entry<T, Integer> entry : countMap.entrySet()) {
-            if (entry.getValue() > maxCount) {
-                maxCount = entry.getValue();
+            final int count = entry.getValue();
+            final boolean isBetter = count > maxCount
+                    || (count == maxCount && (peakKey == null
+                    || entry.getKey().compareTo(peakKey) < 0));
+            if (isBetter) {
+                maxCount = count;
                 peakKey = entry.getKey();
             }
         }
