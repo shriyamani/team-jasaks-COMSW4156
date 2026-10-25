@@ -26,41 +26,64 @@ import java.time.LocalDateTime;
 @Table(name = "reservations")
 public class Reservation {
 
+    /** Unique identifier of the reservation. */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long reservationId;
 
+    /** Time the reservation was created. */
     @Column(nullable = false)
     private Instant createdAt;
 
+    /** Start of the reserved time period. */
     @Column(nullable = false)
     private LocalDateTime startTime;
 
+    /** End of the reserved time period. */
     @Column(nullable = false)
     private LocalDateTime endTime;
 
+    /** Number of people in the group. */
     @Positive
     private int groupSize;
 
+    /** Total price of the reservation. */
     @PositiveOrZero
     @Column(scale = 2)
     private BigDecimal price;
 
+    /** Current status of the reservation. */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ReservationStatus status;
 
+    /** The booker who made the reservation. */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "booker_id")
     private Booker booker;
 
+    /** The space being reserved. */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "space_id")
     private Space space;
 
-    protected Reservation() {}
+    /** No-arg constructor required by JPA. */
+    protected Reservation() { }
 
-    public Reservation(Booker booker, Space space, LocalDateTime startTime, LocalDateTime endTime, int groupSize, BigDecimal price) {
+    /**
+     * Creates a confirmed reservation.
+     *
+     * @param booker the booker making the reservation
+     * @param space the space being reserved
+     * @param startTime start of the reserved time period
+     * @param endTime end of the reserved time period
+     * @param groupSize number of people in the group
+     * @param price total price of the reservation
+     */
+    public Reservation(final Booker booker, final Space space,
+                       final LocalDateTime startTime,
+                       final LocalDateTime endTime,
+                       final int groupSize, final BigDecimal price) {
         this.booker = booker;
         this.space = space;
         this.startTime = startTime;
@@ -70,66 +93,142 @@ public class Reservation {
         this.status = ReservationStatus.CONFIRMED;
     }
 
+    /**
+     * Returns the reservation id.
+     *
+     * @return the reservation id
+     */
     public Long getReservationId() {
         return reservationId;
     }
 
+    /**
+     * Returns the creation time.
+     *
+     * @return the creation time
+     */
     public Instant getCreatedAt() {
         return createdAt;
     }
 
+    /**
+     * Returns the booker.
+     *
+     * @return the booker
+     */
     public Booker getBooker() {
         return booker;
     }
 
+    /**
+     * Returns the reserved space.
+     *
+     * @return the space
+     */
     public Space getSpace() {
         return space;
     }
 
+    /**
+     * Returns the start time.
+     *
+     * @return the start time
+     */
     public LocalDateTime getStartTime() {
         return startTime;
     }
 
+    /**
+     * Returns the end time.
+     *
+     * @return the end time
+     */
     public LocalDateTime getEndTime() {
         return endTime;
     }
 
+    /**
+     * Returns the group size.
+     *
+     * @return the group size
+     */
     public int getGroupSize() {
         return groupSize;
     }
 
+    /**
+     * Returns the price.
+     *
+     * @return the price
+     */
     public BigDecimal getPrice() {
         return price;
     }
 
+    /**
+     * Returns the status.
+     *
+     * @return the status
+     */
     public ReservationStatus getStatus() {
         return status;
     }
 
-    public void setEndTime(LocalDateTime endTime) {
+    /**
+     * Sets the end time.
+     *
+     * @param endTime the new end time
+     */
+    public void setEndTime(final LocalDateTime endTime) {
         this.endTime = endTime;
     }
 
-    public void setStartTime(LocalDateTime startTime) {
+    /**
+     * Sets the start time.
+     *
+     * @param startTime the new start time
+     */
+    public void setStartTime(final LocalDateTime startTime) {
         this.startTime = startTime;
     }
 
-    public void setPrice(BigDecimal price) {
+    /**
+     * Sets the price.
+     *
+     * @param price the new price
+     */
+    public void setPrice(final BigDecimal price) {
         this.price = price;
     }
 
-    public void setGroupSize(int groupSize) {
+    /**
+     * Sets the group size.
+     *
+     * @param groupSize the new group size
+     */
+    public void setGroupSize(final int groupSize) {
         this.groupSize = groupSize;
     }
 
-    public void setStatus(ReservationStatus status) {
+    /**
+     * Sets the status.
+     *
+     * @param status the new status
+     */
+    public void setStatus(final ReservationStatus status) {
         this.status = status;
     }
 
-    public void setSpace(Space space) {
+    /**
+     * Sets the reserved space.
+     *
+     * @param space the new space
+     */
+    public void setSpace(final Space space) {
         this.space = space;
     }
 
+    /** Sets the creation time before the reservation is first persisted. */
     @PrePersist
     public void onCreate() {
         this.createdAt = Instant.now();

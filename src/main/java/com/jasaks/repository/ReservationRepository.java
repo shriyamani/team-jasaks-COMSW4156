@@ -7,7 +7,20 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 
-public interface ReservationRepository extends JpaRepository<Reservation, Long> {
+/**
+ * Repository for {@link Reservation} entities.
+ */
+public interface ReservationRepository
+        extends JpaRepository<Reservation, Long> {
+    /**
+     * Checks whether any non-cancelled reservation for the space overlaps
+     * the given time period.
+     *
+     * @param spaceId id of the space
+     * @param start start of the time period
+     * @param end end of the time period
+     * @return true if an overlapping reservation exists
+     */
     @Query("""
         SELECT COUNT(r) > 0 from Reservation r
         WHERE r.space.spaceId = :spaceId
@@ -19,6 +32,16 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
                      @Param("start") LocalDateTime start,
                      @Param("end") LocalDateTime end);
 
+    /**
+     * Checks whether any non-cancelled reservation for the space, other
+     * than the excluded one, overlaps the given time period.
+     *
+     * @param spaceId id of the space
+     * @param start start of the time period
+     * @param end end of the time period
+     * @param excludeId id of the reservation to ignore
+     * @return true if an overlapping reservation exists
+     */
     @Query("""
         SELECT COUNT(r) > 0 from Reservation r
         WHERE r.space.spaceId = :spaceId
