@@ -1,11 +1,16 @@
 package com.jasaks.service;
 
+import com.jasaks.dto.ReservationRequest;
 import com.jasaks.dto.ReservationResponse;
 import com.jasaks.dto.CancellationResponse;
+import com.jasaks.model.Booker;
 import com.jasaks.model.Reservation;
 import com.jasaks.model.ReservationStatus;
 import com.jasaks.model.Place;
+import com.jasaks.model.Space;
+import com.jasaks.repository.BookerRepository;
 import com.jasaks.repository.ReservationRepository;
+import com.jasaks.repository.SpaceRepository;
 
 
 import java.math.BigDecimal;
@@ -25,19 +30,41 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class ReservationService {
 
+    /** Minutes in an hour, for converting a duration to billable hours. */
+    private static final BigDecimal MINUTES_PER_HOUR =
+            BigDecimal.valueOf(60);
+
+    /** Decimal places retained while computing billable hours. */
+    private static final int HOURS_SCALE = 4;
+
+    /** Decimal places on a stored price. */
+    private static final int PRICE_SCALE = 2;
+
     /**
      * Repository for reservation database access.
      */
     private final ReservationRepository reservationRepository;
 
+    /** Repository for booker lookups. */
+    private final BookerRepository bookerRepository;
+
+    /** Repository for space lookups. */
+    private final SpaceRepository spaceRepository;
+
     /**
-     * Constructs a new ReservationService with the specified repository.
+     * Constructs a new ReservationService with the specified repositories.
      *
      * @param reservationRepository the reservation repository
+     * @param bookerRepository the booker repository
+     * @param spaceRepository the space repository
      */
     public ReservationService(
-            final ReservationRepository reservationRepository) {
+            final ReservationRepository reservationRepository,
+            final BookerRepository bookerRepository,
+            final SpaceRepository spaceRepository) {
         this.reservationRepository = reservationRepository;
+        this.bookerRepository = bookerRepository;
+        this.spaceRepository = spaceRepository;
     }
 
     /**
@@ -234,5 +261,115 @@ public class ReservationService {
             reservation.getCancelledAt(),
             getRefundExplanation(reservation)
         );
+    }
+
+    /**
+     * Creates a reservation after validating the booker, space, capacity,
+     * operating hours and overlaps.
+     *
+     * @param request the reservation to create
+     * @return the confirmed reservation, including its price
+     */
+    @Transactional
+    public ReservationResponse createReservation(
+            final ReservationRequest request) {
+        final LocalDateTime start = request.startTime();
+        final LocalDateTime end = request.endTime();
+
+        requireOrderedWindow(start, end);
+
+        final Booker booker = findBooker(request.bookerId());
+        final Space space = findSpace(request.spaceId());
+
+        requireGroupFits(space, request.groupSize());
+        requireWithinOperatingHours(space.getPlace(), start, end);
+        requireNoOverlap(space, start, end, null);
+
+        final Reservation reservation = new Reservation(
+                booker, space, start, end, request.groupSize(),
+                priceFor(space, start, end));
+
+        return ReservationResponse.from(
+                reservationRepository.save(reservation));
+    }
+
+    private void requireOrderedWindow(final LocalDateTime start,
+            final LocalDateTime end) {
+        if (!end.isAfter(start)) {
+            throw badRequest("endTime must be after startTime");
+        }
+    }
+
+    private void requireGroupFits(final Space space, final int groupSize) {
+        if (groupSize > space.getCapacity()) {
+            throw badRequest("groupSize " + groupSize
+                    + " exceeds the capacity of space "
+                    + space.getSpaceId() + " (" + space.getCapacity() + ")");
+        }
+    }
+
+    private void requireWithinOperatingHours(final Place place,
+            final LocalDateTime start, final LocalDateTime end) {
+        if (!start.toLocalDate().equals(end.toLocalDate())
+                || start.toLocalTime().isBefore(place.getOpenTime())
+                || end.toLocalTime().isAfter(place.getCloseTime())) {
+            throw badRequest("Reservation must fall on one day within the "
+                    + "operating hours of place " + place.getPlaceId()
+                    + " (" + place.getOpenTime() + " to "
+                    + place.getCloseTime() + ")");
+        }
+    }
+
+    // A null excludeId excludes nothing, as when creating.
+    private void requireNoOverlap(final Space space,
+            final LocalDateTime start, final LocalDateTime end,
+            final Long excludeId) {
+        final boolean clash = excludeId == null
+                ? reservationRepository.hasOverlap(
+                        space.getSpaceId(), start, end)
+                : reservationRepository.hasOverlapExcluding(
+                        space.getSpaceId(), start, end, excludeId);
+        if (clash) {
+            throw conflict("Space " + space.getSpaceId()
+                    + " is already reserved for part of that period");
+        }
+    }
+
+    private BigDecimal priceFor(final Space space,
+            final LocalDateTime start, final LocalDateTime end) {
+        final BigDecimal hours =
+                BigDecimal.valueOf(Duration.between(start, end).toMinutes())
+                        .divide(MINUTES_PER_HOUR, HOURS_SCALE,
+                                RoundingMode.HALF_UP);
+        return space.getHourlyRate()
+                .multiply(hours)
+                .setScale(PRICE_SCALE, RoundingMode.HALF_UP);
+    }
+
+    private Booker findBooker(final String bookerId) {
+        return bookerRepository.findById(bookerId)
+                .orElseThrow(() -> notFound(
+                        "Booker not found: " + bookerId));
+    }
+
+    private Space findSpace(final Long spaceId) {
+        return spaceRepository.findById(spaceId)
+                .orElseThrow(() -> notFound(
+                        "Space not found: " + spaceId));
+    }
+
+    private ResponseStatusException badRequest(final String message) {
+        return new ResponseStatusException(
+                HttpStatus.BAD_REQUEST, message);
+    }
+
+    private ResponseStatusException notFound(final String message) {
+        return new ResponseStatusException(
+                HttpStatus.NOT_FOUND, message);
+    }
+
+    private ResponseStatusException conflict(final String message) {
+        return new ResponseStatusException(
+                HttpStatus.CONFLICT, message);
     }
 }
