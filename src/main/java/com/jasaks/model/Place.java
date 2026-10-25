@@ -18,7 +18,7 @@ public class Place {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long placeId;
 
-    private String name;
+    private String placeName;
 
     /**
      * The timezone that the Place you are creating is in (eg. "America/New_York")
@@ -46,9 +46,9 @@ public class Place {
 
     protected Place() {}
 
-    public Place(String name, String timeZone, LocalTime openTime, LocalTime closeTime, int refundHours,
+    public Place(String placeName, String timeZone, LocalTime openTime, LocalTime closeTime, int refundHours,
                  int refundPercent) {
-        this.name = name;
+        this.placeName = placeName;
         this.timeZone = timeZone;
         this.openTime = openTime;
         this.closeTime = closeTime;
@@ -60,8 +60,8 @@ public class Place {
         return placeId;
     }
 
-    public String getName() {
-        return name;
+    public String getPlaceName() {
+        return placeName;
     }
 
     public String getTimeZone() {
@@ -84,8 +84,8 @@ public class Place {
         return refundPercent;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setPlaceName(String placeName) {
+        this.placeName = placeName;
     }
 
     public void setOpenTime(LocalTime openTime) {

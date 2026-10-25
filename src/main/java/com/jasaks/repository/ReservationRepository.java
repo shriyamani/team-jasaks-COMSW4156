@@ -14,6 +14,14 @@ public interface ReservationRepository
         extends JpaRepository<Reservation, Long> {
 
     /**
+     * Checks if any reservation exists for a given space ID.
+     *
+     * @param spaceId the ID of the space
+     * @return true if a reservation exists, false otherwise
+     */
+    boolean existsBySpace_SpaceId(Long spaceId);
+
+    /**
      * Checks if there is an overlapping reservation for a space.
      *
      * @param spaceId the ID of the space
