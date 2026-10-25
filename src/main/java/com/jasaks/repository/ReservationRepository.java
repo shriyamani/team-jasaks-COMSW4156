@@ -19,7 +19,7 @@ public interface ReservationRepository
      * @param spaceId the ID of the space
      * @return true if a reservation exists, false otherwise
      */
-    boolean existsBySpace_SpaceId(Long spaceId);
+    boolean existsBySpaceSpaceId(Long spaceId);
 
     /**
      * Checks if there is an overlapping reservation for a space.

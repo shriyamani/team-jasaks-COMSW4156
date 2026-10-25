@@ -78,7 +78,7 @@ public class SpaceService {
     public void deleteSpace(Long spaceId) {
         Space space = findSpace(spaceId);
 
-        if (reservationRepository.existsBySpace_SpaceId(spaceId)) {
+        if (reservationRepository.existsBySpaceSpaceId(spaceId)) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
                     "Space " + spaceId + " has reservations and cannot be deleted"
