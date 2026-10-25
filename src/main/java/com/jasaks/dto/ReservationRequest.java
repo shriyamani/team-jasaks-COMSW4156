@@ -7,10 +7,8 @@ import jakarta.validation.constraints.Positive;
 import java.time.LocalDateTime;
 
 /**
- * Payload for creating a reservation.
- *
- * <p>Times are interpreted in the place's local time zone, as recorded on
- * {@code Place.timeZone}, not in the server's zone.
+ * Payload for creating a reservation. Times are in the place's local
+ * time zone, not the server's.
  *
  * @param bookerId the booker making the reservation
  * @param spaceId the space being reserved
