@@ -7,9 +7,25 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 
-public interface ReservationRepository extends JpaRepository<Reservation, Long> {
-    boolean existsBySpace_SpaceId(Long spaceId);
+public interface ReservationRepository
+        extends JpaRepository<Reservation, Long> {
 
+    /**
+     * Checks whether a space has any reservations.
+     *
+     * @param spaceId identifier of the space
+     * @return {@code true} when at least one reservation exists
+     */
+    boolean existsBySpaceSpaceId(Long spaceId);
+
+    /**
+     * Checks whether a reservation overlaps an interval for a space.
+     *
+     * @param spaceId identifier of the space
+     * @param start start of the interval
+     * @param end end of the interval
+     * @return {@code true} when an overlap exists
+     */
     @Query("""
         SELECT COUNT(r) > 0 from Reservation r
         WHERE r.space.spaceId = :spaceId
@@ -18,9 +34,18 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             AND r.endTime > :start
     """)
     boolean hasOverlap(@Param("spaceId") Long spaceId,
-                     @Param("start") LocalDateTime start,
-                     @Param("end") LocalDateTime end);
+                       @Param("start") LocalDateTime start,
+                       @Param("end") LocalDateTime end);
 
+    /**
+     * Checks whether another reservation overlaps an interval for a space.
+     *
+     * @param spaceId identifier of the space
+     * @param start start of the interval
+     * @param end end of the interval
+     * @param excludeId identifier of the reservation to ignore
+     * @return {@code true} when an overlap exists
+     */
     @Query("""
         SELECT COUNT(r) > 0 from Reservation r
         WHERE r.space.spaceId = :spaceId
@@ -30,7 +55,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             AND r.endTime > :start
     """)
     boolean hasOverlapExcluding(@Param("spaceId") Long spaceId,
-                       @Param("start") LocalDateTime start,
-                       @Param("end") LocalDateTime end,
-                       @Param("excludeId") Long excludeId);
+                                @Param("start") LocalDateTime start,
+                                @Param("end") LocalDateTime end,
+                                @Param("excludeId") Long excludeId);
 }
