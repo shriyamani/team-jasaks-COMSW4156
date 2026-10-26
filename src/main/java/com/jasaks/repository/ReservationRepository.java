@@ -29,8 +29,8 @@ public interface ReservationRepository
             AND r.endTime > :start
     """)
     boolean hasOverlap(@Param("spaceId") Long spaceId,
-                     @Param("start") LocalDateTime start,
-                     @Param("end") LocalDateTime end);
+                       @Param("start") LocalDateTime start,
+                       @Param("end") LocalDateTime end);
 
     /**
      * Checks whether any non-cancelled reservation for the space, other
@@ -51,7 +51,7 @@ public interface ReservationRepository
             AND r.endTime > :start
     """)
     boolean hasOverlapExcluding(@Param("spaceId") Long spaceId,
-                       @Param("start") LocalDateTime start,
-                       @Param("end") LocalDateTime end,
-                       @Param("excludeId") Long excludeId);
+                                @Param("start") LocalDateTime start,
+                                @Param("end") LocalDateTime end,
+                                @Param("excludeId") Long excludeId);
 }

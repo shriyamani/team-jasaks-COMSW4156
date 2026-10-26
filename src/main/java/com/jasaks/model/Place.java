@@ -23,7 +23,7 @@ public class Place {
     private Long placeId;
 
     /** Name of the place. */
-    private String name;
+    private String placeName;
 
     /**
      * The timezone that the Place you are creating is in
@@ -61,18 +61,17 @@ public class Place {
     /**
      * Creates a place.
      *
-     * @param name name of the place
-     * @param timeZone time zone id of the place (eg. "America/New_York")
-     * @param openTime daily opening time
-     * @param closeTime daily closing time
-     * @param refundHours hours before a reservation within which refunds
-     *     apply
-     * @param refundPercent percentage of the price that is refunded
+     * @param placeName name of the place
+     * @param timeZone IANA time zone identifier
+     * @param openTime time the place opens
+     * @param closeTime time the place closes
+     * @param refundHours hours before start that qualify for a refund
+     * @param refundPercent percentage of the price refunded
      */
-    public Place(final String name, final String timeZone,
+    public Place(final String placeName, final String timeZone,
                  final LocalTime openTime, final LocalTime closeTime,
                  final int refundHours, final int refundPercent) {
-        this.name = name;
+        this.placeName = placeName;
         this.timeZone = timeZone;
         this.openTime = openTime;
         this.closeTime = closeTime;
@@ -90,18 +89,18 @@ public class Place {
     }
 
     /**
-     * Returns the place name.
+     * Returns the name of the place.
      *
      * @return the place name
      */
-    public String getName() {
-        return name;
+    public String getPlaceName() {
+        return placeName;
     }
 
     /**
-     * Returns the place time zone id.
+     * Returns the time zone of the place.
      *
-     * @return the time zone id
+     * @return the IANA time zone identifier
      */
     public String getTimeZone() {
         return timeZone;
@@ -144,18 +143,18 @@ public class Place {
     }
 
     /**
-     * Sets the place name.
+     * Sets the name of the place.
      *
-     * @param name the new name
+     * @param placeName new name of the place
      */
-    public void setName(final String name) {
-        this.name = name;
+    public void setPlaceName(final String placeName) {
+        this.placeName = placeName;
     }
 
     /**
-     * Sets the daily opening time.
+     * Sets the opening time of the place.
      *
-     * @param openTime the new opening time
+     * @param openTime new opening time
      */
     public void setOpenTime(final LocalTime openTime) {
         this.openTime = openTime;
