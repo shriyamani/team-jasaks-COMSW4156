@@ -125,6 +125,15 @@ public class Reservation {
         return cancelledAt;
     }
 
+    /**
+     * Returns the refund amount if the reservation was cancelled.
+     * 
+     * @return the refund amount
+     */
+    public BigDecimal getRefundAmount() {
+        return refundAmount;
+    }
+
     public void setEndTime(LocalDateTime endTime) {
         this.endTime = endTime;
     }

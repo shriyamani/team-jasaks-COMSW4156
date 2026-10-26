@@ -1,11 +1,15 @@
 package com.jasaks.controller;
 
 import com.jasaks.dto.ReservationResponse;
+import com.jasaks.dto.CancellationResponse;
 import com.jasaks.service.ReservationService;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -55,5 +59,23 @@ public class ReservationController {
             @RequestParam(required = false) final Long spaceId) {
         return reservationService.listUserReservations(
                 userId, startDate, endDate, placeId, spaceId);
+    }
+
+    /**
+     * Cancels a reservation for a user.
+     * 
+     * @param id the reservation ID
+     * @param bookerId the booker ID
+     * @return
+     */
+    @PostMapping("/{id}/cancel")
+    public ResponseEntity<CancellationResponse> cancelReservation(
+            @PathVariable Long reservationId,
+            @RequestParam String bookerId) {
+
+        CancellationResponse response =
+            reservationService.cancelReservation(reservationId, bookerId);
+
+        return ResponseEntity.ok(response);
     }
 }

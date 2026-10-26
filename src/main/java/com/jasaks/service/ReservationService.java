@@ -1,8 +1,13 @@
 package com.jasaks.service;
 
 import com.jasaks.dto.ReservationResponse;
+import com.jasaks.dto.CancellationResponse;
 import com.jasaks.model.Reservation;
+import com.jasaks.model.ReservationStatus;
 import com.jasaks.repository.ReservationRepository;
+
+
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -108,5 +113,59 @@ public class ReservationService {
             }
         }
         return true;
+    }
+
+    /**
+     * Cancels a reservation for a user.
+     * 
+     * @param reservationId the ID of the reservation to cancel
+     * @param bookerId the ID of the user trying to cancel the reservation
+     * @return the cancellation response
+     */
+    @Transactional
+    public CancellationResponse cancelReservation(
+            Long reservationId,
+            String bookerId) {
+
+        Reservation reservation = reservationRepository
+            .findById(reservationId)
+            .orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "Reservation not found"
+            ));
+
+        if (!reservation.getBooker().getBookerId().equals(bookerId)) {
+            throw new ResponseStatusException(
+                HttpStatus.FORBIDDEN,
+                "You cannot cancel this reservation"
+            );
+        }
+
+        if (reservation.getStatus() != ReservationStatus.CONFIRMED) {
+            throw new ResponseStatusException(
+                HttpStatus.CONFLICT,
+                "Reservation cannot be cancelled"
+            );
+        }
+
+        if (!reservation.getStartTime().isAfter(LocalDateTime.now())) {
+            throw new ResponseStatusException(
+                HttpStatus.CONFLICT,
+                "Reservation has already started or passed"
+            );
+        }
+
+        // full refund policy only for now
+        BigDecimal refund = reservation.getPrice();
+
+        reservation.cancel(refund);
+        reservationRepository.save(reservation);
+
+        return new CancellationResponse(
+            reservation.getReservationId(),
+            reservation.getStatus(),
+            reservation.getRefundAmount(),
+            reservation.getCancelledAt()
+        );
     }
 }
