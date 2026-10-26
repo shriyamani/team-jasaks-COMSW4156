@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * REST controller for handling reservation HTTP requests.
@@ -66,7 +67,11 @@ public class ReservationController {
      * 
      * @param id the reservation ID
      * @param bookerId the booker ID
-     * @return
+     * @return the cancellation response containing refund details
+     * @throws ResponseStatusException if the reservation cannot be cancelled
+     * @throws IllegalArgumentException if the refund amount is invalid
+     * @throws IllegalStateException if the reservation state or 
+     * cancellation policy is invalid
      */
     @PostMapping("/{id}/cancel")
     public ResponseEntity<CancellationResponse> cancelReservation(
