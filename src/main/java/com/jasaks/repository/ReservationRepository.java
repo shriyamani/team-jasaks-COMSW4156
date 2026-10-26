@@ -7,13 +7,19 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.time.LocalDateTime;
-
 /**
  * Repository for {@link Reservation} entities.
  */
 public interface ReservationRepository
         extends JpaRepository<Reservation, Long> {
+    /**
+     * Checks whether a space has any reservations.
+     *
+     * @param spaceId id of the space
+     * @return true if at least one reservation exists
+     */
+    boolean existsBySpaceSpaceId(Long spaceId);
+
     /**
      * Checks whether any non-cancelled reservation for the space overlaps
      * the given time period.

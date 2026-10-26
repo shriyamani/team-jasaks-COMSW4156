@@ -129,6 +129,15 @@ public class Space {
     }
 
     /**
+     * Sets the place that contains the space.
+     *
+     * @param place the new containing place
+     */
+    public void setPlace(final Place place) {
+        this.place = place;
+    }
+
+    /**
      * Sets the space name.
      *
      * @param spaceName the new space name

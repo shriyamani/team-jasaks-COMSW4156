@@ -60,7 +60,7 @@ public class SpaceService {
     public List<SpaceResponse> getSpaces(final Long placeId) {
         List<Space> spaces = placeId == null
                 ? spaceRepository.findAll()
-                : spaceRepository.findByPlace_PlaceId(placeId);
+                : spaceRepository.findByPlacePlaceId(placeId);
 
         return spaces.stream()
                 .map(SpaceResponse::from)
@@ -171,7 +171,7 @@ public class SpaceService {
                     "startTime and endTime must be between " + openTime + "and " + closeTime + ".");
         }
 
-        List<Space> spaces = spaceRepository.findByPlace_PlaceId(request.placeId());
+        List<Space> spaces = spaceRepository.findByPlacePlaceId(request.placeId());
         List<SpaceSearchResponse> available = new ArrayList<>();
         LocalDateTime start = request.startTime();
         LocalDateTime end = request.endTime();
