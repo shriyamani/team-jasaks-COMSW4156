@@ -4,7 +4,7 @@ import com.jasaks.model.Space;
 import java.math.BigDecimal;
 
 public record SpaceSearchResponse(
-        Space request,
+        SpaceResponse request,
         BigDecimal estPrice
 ) {
 }
