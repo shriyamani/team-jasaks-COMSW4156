@@ -4,6 +4,7 @@ import com.jasaks.dto.ReservationResponse;
 import com.jasaks.dto.CancellationResponse;
 import com.jasaks.model.Reservation;
 import com.jasaks.model.ReservationStatus;
+import com.jasaks.model.CancellationPolicy;
 import com.jasaks.repository.ReservationRepository;
 
 
@@ -116,6 +117,86 @@ public class ReservationService {
     }
 
     /**
+     * Calculates the refund amount for a reservation based on 
+     * its cancellation policy and the time until the reservation starts.
+     * 
+     * @param reservation the reservation to calculate the refund for
+     * @return the refund amount
+     * @throws IllegalStateException if the cancellation policy is unknown
+     */
+    private BigDecimal calculateRefund(final Reservation reservation) {
+        long hoursUntilStart = java.time.Duration.between(
+            LocalDateTime.now(),
+            reservation.getStartTime()
+        ).toHours();
+
+        CancellationPolicy policy =
+            reservation.getSpace().getCancellationPolicy();
+
+        switch (policy) {
+            case FLEXIBLE:
+                return hoursUntilStart >= 24
+                    ? reservation.getPrice()
+                    : reservation.getPrice().multiply(new BigDecimal("0.5"));
+
+            case MODERATE:
+                return hoursUntilStart >= 168
+                    ? reservation.getPrice()
+                    : reservation.getPrice().multiply(new BigDecimal("0.5"));
+
+            case STRICT:
+                return hoursUntilStart >= 336
+                    ? reservation.getPrice()
+                    : reservation.getPrice().multiply(new BigDecimal("0.5"));
+
+            default:
+                throw new IllegalStateException(
+                    "Unknown cancellation policy"
+                );
+        }
+    }
+
+    /**
+     * Generates an explanation for how refund amount was calculated 
+     * based on the cancellation policy and timing.
+     * 
+     * @param reservation
+     * @return the explanation string
+     * @throws IllegalStateException if the cancellation policy is unknown
+     */
+    private String getRefundExplanation(final Reservation reservation) {
+        long hoursUntilStart = java.time.Duration.between(
+            LocalDateTime.now(),
+            reservation.getStartTime()
+        ).toHours();
+
+        CancellationPolicy policy =
+            reservation.getSpace().getCancellationPolicy();
+
+        switch (policy) {
+            case FLEXIBLE:
+                return hoursUntilStart >= 24
+                    ? "Full refund: cancelled at least 24 hours before start."
+                    : "50% refund: cancelled less than 24 hours before start.";
+
+            case MODERATE:
+                return hoursUntilStart >= 168
+                    ? "Full refund: cancelled at least 7 days before start."
+                    : "50% refund: cancelled less than 7 days before start.";
+
+            case STRICT:
+                return hoursUntilStart >= 336
+                    ? "Full refund: cancelled at least 14 days before start."
+                    : "50% refund: cancelled less than 14 days before start.";
+
+            default:
+                throw new IllegalStateException(
+                    "Unknown cancellation policy"
+                );
+        }
+    }
+
+    /**
      * Cancels a reservation for a user.
      * 
      * @param reservationId the ID of the reservation to cancel
@@ -124,8 +205,8 @@ public class ReservationService {
      */
     @Transactional
     public CancellationResponse cancelReservation(
-            Long reservationId,
-            String bookerId) {
+            final Long reservationId,
+            final String bookerId) {
 
         Reservation reservation = reservationRepository
             .findById(reservationId)
@@ -155,8 +236,7 @@ public class ReservationService {
             );
         }
 
-        // full refund policy only for now
-        BigDecimal refund = reservation.getPrice();
+        BigDecimal refund = calculateRefund(reservation);
 
         reservation.cancel(refund);
         reservationRepository.save(reservation);
@@ -165,7 +245,8 @@ public class ReservationService {
             reservation.getReservationId(),
             reservation.getStatus(),
             reservation.getRefundAmount(),
-            reservation.getCancelledAt()
+            reservation.getCancelledAt(),
+            getRefundExplanation(reservation)
         );
     }
 }

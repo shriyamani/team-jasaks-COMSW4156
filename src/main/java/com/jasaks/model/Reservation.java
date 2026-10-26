@@ -163,7 +163,7 @@ public class Reservation {
      * 
      * @param refundAmount the amount to be refunded
      */
-    public void cancel(BigDecimal refundAmount) {
+    public void cancel(final BigDecimal refundAmount) {
         if (this.status != ReservationStatus.CONFIRMED) {
             throw new IllegalStateException(
                 "Only confirmed reservations can be cancelled"

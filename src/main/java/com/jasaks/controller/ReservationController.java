@@ -70,11 +70,11 @@ public class ReservationController {
      */
     @PostMapping("/{id}/cancel")
     public ResponseEntity<CancellationResponse> cancelReservation(
-            @PathVariable Long reservationId,
+            @PathVariable Long id,
             @RequestParam String bookerId) {
 
         CancellationResponse response =
-            reservationService.cancelReservation(reservationId, bookerId);
+            reservationService.cancelReservation(id, bookerId);
 
         return ResponseEntity.ok(response);
     }

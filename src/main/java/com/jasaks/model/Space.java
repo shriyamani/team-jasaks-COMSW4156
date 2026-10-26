@@ -1,6 +1,8 @@
 package com.jasaks.model;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
 import jakarta.persistence.Id;
 import jakarta.persistence.GeneratedValue;
@@ -12,6 +14,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ElementCollection;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
+
 
 import java.math.BigDecimal;
 import java.util.HashSet;
@@ -45,6 +48,11 @@ public class Space {
     /** Amenities available in the space. */
     @ElementCollection
     private Set<String> amenities = new HashSet<>();
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private CancellationPolicy cancellationPolicy =
+            CancellationPolicy.FLEXIBLE;
 
     protected Space() {
     }
@@ -132,6 +140,15 @@ public class Space {
     }
 
     /**
+     * Returns the cancellation policy of the space.
+     * 
+     * @return the cancellation policy
+     */
+    public CancellationPolicy getCancellationPolicy() {
+        return cancellationPolicy;
+    }
+
+    /**
      * Sets the name of the space.
      *
      * @param spaceName new space name
@@ -166,5 +183,15 @@ public class Space {
     public void setAmenities(final Set<String> amenities) {
         this.amenities.clear();
         this.amenities.addAll(amenities);
+    }
+
+    /**
+     * Sets the cancellation policy of the space.
+     *
+     * @param cancellationPolicy new cancellation policy
+     */
+    public void setCancellationPolicy(
+        final CancellationPolicy cancellationPolicy) {
+        this.cancellationPolicy = cancellationPolicy;
     }
 }
