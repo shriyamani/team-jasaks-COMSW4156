@@ -111,10 +111,10 @@ public class ReportService {
                     HttpStatus.BAD_REQUEST,
                     "Start date and end date must be provided");
         }
-        if (startDate.isAfter(endDate)) {
+        if (!startDate.isBefore(endDate)) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "Start date cannot be after end date");
+                    "Start date must be before end date");
         }
 
         final Place place = placeRepository.findById(placeId)
@@ -196,12 +196,12 @@ public class ReportService {
                     effectiveStart, effectiveEnd).toMinutes();
             totalBookedHours += Math.max(0, minutes) / MINUTES_IN_HOUR;
 
-            final int startHour = r.getStartTime().getHour();
+            final int startHour = effectiveStart.getHour();
             hourCounts.put(startHour,
                     hourCounts.getOrDefault(startHour, 0) + 1);
 
             final String bookingDate =
-                    r.getStartTime().toLocalDate().toString();
+                    effectiveStart.toLocalDate().toString();
             dateCounts.put(bookingDate,
                     dateCounts.getOrDefault(bookingDate, 0) + 1);
 
