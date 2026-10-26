@@ -2,13 +2,12 @@ package com.jasaks.controller;
 
 import com.jasaks.dto.SpaceRequest;
 import com.jasaks.dto.SpaceResponse;
-import com.jasaks.dto.SpaceSearchRequest;
 import com.jasaks.dto.SpaceSearchResponse;
-import com.jasaks.model.Space;
 import com.jasaks.service.SpaceService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,6 +25,7 @@ import java.util.List;
  * REST endpoints for managing spaces.
  */
 @RestController
+@Validated
 @RequestMapping("/api/spaces")
 public class SpaceController {
 
@@ -109,7 +109,11 @@ public class SpaceController {
      */
     @GetMapping("/search")
     public ResponseEntity<List<SpaceSearchResponse>> getAvailableSpaces(
-            @RequestBody final SpaceSearchRequest request) {
+            @RequestParam final String placeName,
+            @RequestParam final String startTime,
+            @RequestParam (required = false) final String endTime,
+            @RequestParam final int minCapacity
+            ) {
         return ResponseEntity.ok(spaceService.findAvailableSpaces(request));
     }
 }
