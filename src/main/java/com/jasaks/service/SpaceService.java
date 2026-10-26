@@ -2,6 +2,8 @@ package com.jasaks.service;
 
 import com.jasaks.dto.SpaceRequest;
 import com.jasaks.dto.SpaceResponse;
+import com.jasaks.dto.SpaceSearchRequest;
+import com.jasaks.dto.SpaceSearchResponse;
 import com.jasaks.model.Place;
 import com.jasaks.model.Space;
 import com.jasaks.repository.PlaceRepository;
@@ -12,7 +14,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
+import java.time.LocalDateTime;
+import java.time.Duration;
 
 @Service
 public class SpaceService {
@@ -146,5 +154,42 @@ public class SpaceService {
                         HttpStatus.NOT_FOUND,
                         "Place not found: " + placeId
                 ));
+    }
+
+    public List<SpaceSearchResponse> findAvailableSpaces(final SpaceSearchRequest request) {
+
+        findPlace(request.placeId());
+
+        List<Space> spaces = spaceRepository.findByPlace_PlaceId(request.placeId());
+        List<SpaceSearchResponse> available = new ArrayList<SpaceSearchResponse>();
+        LocalDateTime start = request.startTime();
+        LocalDateTime end = request.endTime();
+        Duration duration = Duration.between(start, end);
+
+        for (Space space: spaces) {
+            if (!request.amenities().isEmpty()) {
+                Set<String> availableAmenities = space.getAmenities();
+                if (!availableAmenities.containsAll(request.amenities())) {
+                    spaces.remove(space);
+                    continue;
+                }
+            }
+
+            if (space.getCapacity() < request.minCapacity()) {
+                spaces.remove(space);
+                continue;
+            }
+
+            if (reservationRepository.hasOverlap(space.getSpaceId(), request.startTime(), request.endTime())) {
+                spaces.remove(space);
+            }
+
+            BigDecimal hours = BigDecimal.valueOf(duration.toHoursPart());
+            BigDecimal price = space.getHourlyRate().multiply(hours);
+
+            SpaceSearchResponse response  = new SpaceSearchResponse(space, price);
+            available.add(response);
+        }
+        return available;
     }
 }

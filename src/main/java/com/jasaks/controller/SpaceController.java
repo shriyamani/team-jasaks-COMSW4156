@@ -2,9 +2,13 @@ package com.jasaks.controller;
 
 import com.jasaks.dto.SpaceRequest;
 import com.jasaks.dto.SpaceResponse;
+import com.jasaks.dto.SpaceSearchRequest;
+import com.jasaks.dto.SpaceSearchResponse;
+import com.jasaks.model.Space;
 import com.jasaks.service.SpaceService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -96,5 +100,16 @@ public class SpaceController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteSpace(@PathVariable final Long spaceId) {
         spaceService.deleteSpace(spaceId);
+    }
+
+    /**
+     * Gets available spaces for a given place.
+     *
+     * @param request the search available spaces request
+     */
+    @GetMapping("/{placeId}")
+    public ResponseEntity<List<SpaceSearchResponse>> getAvailableSpaces(
+            @RequestBody final SpaceSearchRequest request) {
+        return spaceService.findAvailableSpaces(request);
     }
 }
