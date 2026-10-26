@@ -21,12 +21,12 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Set;
 
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -197,9 +197,21 @@ class SpaceControllerTests {
 
         mockMvc.perform(get("/api/spaces/search")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(spaceRequestJson(place.getPlaceId(), start, end, 6, "wifi")))
-                .andDo(print())
-                .andExpect(status().isOk());
+                        .param("placeName", place.getPlaceName())
+                        .param("startTime", start.toString())
+                        .param("endTime", end.toString())
+                        .param("minCapacity", "6")
+                        .param("amenities", "wifi"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].request.spaceId").value(5))
+                .andExpect(jsonPath("$[0].request.placeId").value(7))
+                .andExpect(jsonPath("$[0]request.placeName").value("Columbia University"))
+                .andExpect(jsonPath("$[0].request.spaceName").value("Room A"))
+                .andExpect(jsonPath("$[0].request.capacity").value(6))
+                .andExpect(jsonPath("$[0].request.hourlyRate").value(20.00))
+                .andExpect(jsonPath("$[0].request.amenities").value(hasItem("wifi")))
+                .andExpect(jsonPath("$[0].request.amenities", hasSize(1)))
+                .andExpect(jsonPath("$[0].estPrice").value(80.00));
     }
 
 
@@ -238,21 +250,5 @@ class SpaceControllerTests {
                   "placeId": %d
                 }
                 """.formatted(name, capacity, hourlyRate, amenitiesJson, placeId);
-    }
-
-    private String spaceRequestJson(Long placeId, LocalDateTime start, LocalDateTime end, int minCapacity, String... amenities) {
-        String amenitiesJson = amenities.length == 0
-                ? ""
-                : "\"" + String.join("\",\"", amenities) + "\"";
-
-        return """
-                {
-                  "placeId": %d,
-                  "startTime": "%s",
-                  "endTime": "%s",
-                  "minCapacity": %d,
-                  "amenities": [%s]
-                }
-                """.formatted(placeId, start, end, minCapacity, amenitiesJson);
     }
 }
