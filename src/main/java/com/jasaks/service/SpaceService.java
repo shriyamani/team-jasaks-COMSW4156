@@ -18,7 +18,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.HashSet;
 import java.util.Set;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -142,26 +141,11 @@ public class SpaceService {
         spaceRepository.delete(space);
     }
 
-    private Space findSpace(final Long spaceId) {
-        return spaceRepository.findById(spaceId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Space not found: " + spaceId
-                ));
-    }
-
-    private Place findPlace(final Long placeId) {
-        return placeRepository.findById(placeId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Place not found: " + placeId
-                ));
-    }
-
-    public Long findPlaceIdByName(final String placeName) {
-        return placeRepository.findIdByName(placeName);
-    }
-
+    /**
+     * Searches for available spaces that match given parameters.
+     *
+     * @param request the object representing the search request parameters
+     */
     public List<SpaceSearchResponse> findAvailableSpaces(final SpaceSearchRequest request) {
 
         if (request.startTime() == null || request.endTime() == null
@@ -182,7 +166,7 @@ public class SpaceService {
         }
 
         if (request.startTime().toLocalTime().isBefore(openTime) ||
-            request.endTime().toLocalTime().isAfter(closeTime)) {
+                request.endTime().toLocalTime().isAfter(closeTime)) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT,
                     "startTime and endTime must be between " + openTime + "and " + closeTime + ".");
         }
@@ -217,4 +201,26 @@ public class SpaceService {
         }
         return available;
     }
+
+    private Space findSpace(final Long spaceId) {
+        return spaceRepository.findById(spaceId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Space not found: " + spaceId
+                ));
+    }
+
+    private Place findPlace(final Long placeId) {
+        return placeRepository.findById(placeId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Place not found: " + placeId
+                ));
+    }
+
+    public Long findPlaceIdByName(final String placeName) {
+        return placeRepository.findIdByName(placeName);
+    }
+
+
 }
