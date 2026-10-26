@@ -21,6 +21,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Set;
 
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -183,6 +184,36 @@ class SpaceControllerTests {
                         .content(requestJson("Room A", 4, "10.00", 9999L)))
                 .andExpect(status().isNotFound());
     }
+
+    @Test
+    void searchAvailableSpacesOkay() throws Exception {
+        Place place = createPlace("Columbia University");
+        Space space1 = createSpace(place, "Room A");
+        Space space2 = spaceRepository.save(new Space(
+                place, "Room B", 4, new BigDecimal("10.00"), Set.of("wifi", "tv")));
+
+        LocalDateTime start = LocalDateTime.of(2026, 11, 25, 14, 0, 0);
+        LocalDateTime end = LocalDateTime.of(2026, 11, 25, 18, 0, 0 );
+
+        mockMvc.perform(get("/api/spaces/search")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .param("placeName", place.getPlaceName())
+                        .param("startTime", start.toString())
+                        .param("endTime", end.toString())
+                        .param("minCapacity", "6")
+                        .param("amenities", "wifi"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].request.spaceId").value(5))
+                .andExpect(jsonPath("$[0].request.placeId").value(7))
+                .andExpect(jsonPath("$[0]request.placeName").value("Columbia University"))
+                .andExpect(jsonPath("$[0].request.spaceName").value("Room A"))
+                .andExpect(jsonPath("$[0].request.capacity").value(6))
+                .andExpect(jsonPath("$[0].request.hourlyRate").value(20.00))
+                .andExpect(jsonPath("$[0].request.amenities").value(hasItem("wifi")))
+                .andExpect(jsonPath("$[0].request.amenities", hasSize(1)))
+                .andExpect(jsonPath("$[0].estPrice").value(80.00));
+    }
+
 
     private Place createPlace(String name) {
         return placeRepository.save(new Place(

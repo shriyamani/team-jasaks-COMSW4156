@@ -2,6 +2,8 @@ package com.jasaks.service;
 
 import com.jasaks.dto.SpaceRequest;
 import com.jasaks.dto.SpaceResponse;
+import com.jasaks.dto.SpaceSearchRequest;
+import com.jasaks.dto.SpaceSearchResponse;
 import com.jasaks.model.Place;
 import com.jasaks.model.Space;
 import com.jasaks.repository.PlaceRepository;
@@ -12,7 +14,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.Duration;
 
 @Service
 public class SpaceService {
@@ -132,6 +141,67 @@ public class SpaceService {
         spaceRepository.delete(space);
     }
 
+    /**
+     * Searches for available spaces that match given parameters.
+     *
+     * @param request the object representing the search request parameters
+     */
+    public List<SpaceSearchResponse> findAvailableSpaces(final SpaceSearchRequest request) {
+
+        if (request.startTime() == null || request.endTime() == null
+                || !request.startTime().isBefore(request.endTime())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "startTime must be before endTime");
+        }
+
+        Place searchedPlace = findPlace(request.placeId());
+        LocalTime openTime = searchedPlace.getOpenTime();
+        LocalTime closeTime = searchedPlace.getCloseTime();
+
+        int totalHours = BigDecimal.valueOf(Duration.between(request.startTime(), request.endTime()).toHours()).intValueExact();
+
+        if (totalHours > 24) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT,
+                    "startTime and endTime duration must be less than 24 hours");
+        }
+
+        if (request.startTime().toLocalTime().isBefore(openTime) ||
+                request.endTime().toLocalTime().isAfter(closeTime)) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT,
+                    "startTime and endTime must be between " + openTime + "and " + closeTime + ".");
+        }
+
+        List<Space> spaces = spaceRepository.findByPlace_PlaceId(request.placeId());
+        List<SpaceSearchResponse> available = new ArrayList<>();
+        LocalDateTime start = request.startTime();
+        LocalDateTime end = request.endTime();
+        BigDecimal minutes = BigDecimal.valueOf(Duration.between(start, end).toMinutes()).divide(BigDecimal.valueOf(60));
+
+        for (Space space: spaces) {
+            if (!request.amenities().isEmpty()) {
+                Set<String> availableAmenities = space.getAmenities();
+                if (!availableAmenities.containsAll(request.amenities())) {
+                    continue;
+                }
+            }
+
+            if (space.getCapacity() < request.minCapacity()) {
+                continue;
+            }
+
+            if (reservationRepository.hasOverlap(space.getSpaceId(), request.startTime(), request.endTime())) {
+                continue;
+            }
+
+            BigDecimal hourlyRate = space.getHourlyRate();
+            BigDecimal price = hourlyRate.multiply(minutes).setScale(2, RoundingMode.HALF_UP);
+
+            SpaceSearchResponse response  = new SpaceSearchResponse(SpaceResponse.from(space), price);
+            available.add(response);
+        }
+        return available;
+    }
+
     private Space findSpace(final Long spaceId) {
         return spaceRepository.findById(spaceId)
                 .orElseThrow(() -> new ResponseStatusException(
@@ -147,4 +217,10 @@ public class SpaceService {
                         "Place not found: " + placeId
                 ));
     }
+
+    public Long findPlaceIdByName(final String placeName) {
+        return placeRepository.findIdByName(placeName);
+    }
+
+
 }
