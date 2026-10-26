@@ -4,12 +4,15 @@ import com.jasaks.dto.ReservationResponse;
 import com.jasaks.dto.CancellationResponse;
 import com.jasaks.model.Reservation;
 import com.jasaks.model.ReservationStatus;
-import com.jasaks.model.CancellationPolicy;
+import com.jasaks.model.Place;
 import com.jasaks.repository.ReservationRepository;
 
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.Duration;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -122,38 +125,29 @@ public class ReservationService {
      * 
      * @param reservation the reservation to calculate the refund for
      * @return the refund amount
-     * @throws IllegalStateException if the cancellation policy is unknown
      */
     private BigDecimal calculateRefund(final Reservation reservation) {
-        long hoursUntilStart = java.time.Duration.between(
-            LocalDateTime.now(),
+        Place place = reservation.getSpace().getPlace();
+        final ZoneId placeZone = ZoneId.of(place.getTimeZone());
+        final LocalDateTime currentTimeInPlace = LocalDateTime.now(placeZone);
+
+        final Duration timeUntilStart = Duration.between(
+            currentTimeInPlace,
             reservation.getStartTime()
-        ).toHours();
+        );
 
-        CancellationPolicy policy =
-            reservation.getSpace().getCancellationPolicy();
+        int refundHours = place.getRefundHours();
+        int refundPercent = place.getRefundPercent();
 
-        switch (policy) {
-            case FLEXIBLE:
-                return hoursUntilStart >= 24
-                    ? reservation.getPrice()
-                    : reservation.getPrice().multiply(new BigDecimal("0.5"));
+        if (timeUntilStart.compareTo(Duration.ofHours(refundHours)) >= 0) {
+            final BigDecimal refundRate = BigDecimal.valueOf(refundPercent)
+                .divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
 
-            case MODERATE:
-                return hoursUntilStart >= 168
-                    ? reservation.getPrice()
-                    : reservation.getPrice().multiply(new BigDecimal("0.5"));
-
-            case STRICT:
-                return hoursUntilStart >= 336
-                    ? reservation.getPrice()
-                    : reservation.getPrice().multiply(new BigDecimal("0.5"));
-
-            default:
-                throw new IllegalStateException(
-                    "Unknown cancellation policy"
-                );
+            return reservation.getPrice()
+                .multiply(refundRate)
+                .setScale(2, RoundingMode.HALF_UP);
         }
+        return BigDecimal.ZERO;
     }
 
     /**
@@ -162,38 +156,29 @@ public class ReservationService {
      * 
      * @param reservation
      * @return the explanation string
-     * @throws IllegalStateException if the cancellation policy is unknown
      */
     private String getRefundExplanation(final Reservation reservation) {
-        long hoursUntilStart = java.time.Duration.between(
-            LocalDateTime.now(),
+        Place place = reservation.getSpace().getPlace();
+        final ZoneId placeZone = ZoneId.of(place.getTimeZone());
+        final LocalDateTime currentTimeInPlace = LocalDateTime.now(placeZone);
+        
+        final Duration timeUntilStart = java.time.Duration.between(
+            currentTimeInPlace,
             reservation.getStartTime()
-        ).toHours();
+        );
 
-        CancellationPolicy policy =
-            reservation.getSpace().getCancellationPolicy();
+        int refundHours = place.getRefundHours();
+        int refundPercent = place.getRefundPercent();
 
-        switch (policy) {
-            case FLEXIBLE:
-                return hoursUntilStart >= 24
-                    ? "Full refund: cancelled at least 24 hours before start."
-                    : "50% refund: cancelled less than 24 hours before start.";
-
-            case MODERATE:
-                return hoursUntilStart >= 168
-                    ? "Full refund: cancelled at least 7 days before start."
-                    : "50% refund: cancelled less than 7 days before start.";
-
-            case STRICT:
-                return hoursUntilStart >= 336
-                    ? "Full refund: cancelled at least 14 days before start."
-                    : "50% refund: cancelled less than 14 days before start.";
-
-            default:
-                throw new IllegalStateException(
-                    "Unknown cancellation policy"
-                );
+        if (timeUntilStart.compareTo(Duration.ofHours(refundHours)) >= 0) {
+            return "Refund = original price times " + refundPercent
+                + "% because cancellation occurred at least "
+                + refundHours + " hours before the start time.";
         }
+
+        return "No refund because cancellation occurred less than "
+            + refundHours + "hours before the start time.";
+    
     }
 
     /**
@@ -229,7 +214,8 @@ public class ReservationService {
             );
         }
 
-        if (!reservation.getStartTime().isAfter(LocalDateTime.now())) {
+        if (!reservation.getStartTime().isAfter(LocalDateTime.now(ZoneId.of(
+            reservation.getSpace().getPlace().getTimeZone())))) {
             throw new ResponseStatusException(
                 HttpStatus.CONFLICT,
                 "Reservation has already started or passed"

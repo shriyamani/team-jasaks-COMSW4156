@@ -12,7 +12,6 @@ import com.jasaks.model.Booker;
 import com.jasaks.model.Place;
 import com.jasaks.model.Reservation;
 import com.jasaks.model.Space;
-import com.jasaks.model.CancellationPolicy;
 import com.jasaks.model.ReservationStatus;
 import com.jasaks.repository.ReservationRepository;
 import java.lang.reflect.Field;
@@ -203,11 +202,35 @@ public final class ReservationServiceTest {
      */
     @Test
     public void testCancelReservationSuccess() {
-        reservationOne.getSpace().setCancellationPolicy(
-                CancellationPolicy.FLEXIBLE);
+        reservationOne.getSpace().getPlace().setRefundHours(2);
+        reservationOne.getSpace().getPlace().setRefundPercent(50);
+        reservationOne.setStartTime(LocalDateTime.now().plusHours(3));
 
-        reservationOne.setStartTime(
-                LocalDateTime.now().plusHours(48));
+        when(reservationRepository.findById(100L))
+                .thenReturn(Optional.of(reservationOne));
+
+        final CancellationResponse response = reservationService.cancelReservation(100L, "jsw2219");
+
+        assertNotNull(response);
+        assertEquals(100L, response.reservationId());
+        assertEquals(ReservationStatus.CANCELLED, response.status());
+        assertEquals(0, new BigDecimal("25.00").compareTo(
+                response.refundAmount()));
+        assertNotNull(response.cancelledAt());
+
+        verify(reservationRepository).save(reservationOne);
+
+    }
+    
+    /**
+     * Tests no refund when cancellation is too close to the start time.
+     */
+    @Test
+    public void testCancelReservationNoRefundWhenTooClose() {
+        reservationOne.getSpace().getPlace().setRefundHours(2);
+        reservationOne.getSpace().getPlace().setRefundPercent(50);
+
+        reservationOne.setStartTime(LocalDateTime.now().plusHours(1));
 
         when(reservationRepository.findById(100L))
                 .thenReturn(Optional.of(reservationOne));
@@ -215,26 +238,20 @@ public final class ReservationServiceTest {
         final CancellationResponse response =
                 reservationService.cancelReservation(100L, "jsw2219");
 
-        assertNotNull(response);
-        assertEquals(100L, response.reservationId());
         assertEquals(ReservationStatus.CANCELLED, response.status());
-        assertEquals(0, new BigDecimal("50.00").compareTo(
+        assertEquals(0, BigDecimal.ZERO.compareTo(
                 response.refundAmount()));
-        assertNotNull(response.cancelledAt());
-
-        verify(reservationRepository).save(reservationOne);
     }
 
     /**
-     * Tests a partial refund under the flexible policy.
+     * Tests full refund when cancellation before the required lead time.
      */
     @Test
-    public void testCancelReservationPartialRefund() {
-        reservationOne.getSpace().setCancellationPolicy(
-                CancellationPolicy.FLEXIBLE);
+    public void testRefundWhenAtLeastRefundHoursBeforeStart() {
+        reservationOne.getSpace().getPlace().setRefundHours(2);
+        reservationOne.getSpace().getPlace().setRefundPercent(50);
 
-        reservationOne.setStartTime(
-                LocalDateTime.now().plusHours(12));
+        reservationOne.setStartTime(LocalDateTime.now().plusHours(3));
 
         when(reservationRepository.findById(100L))
                 .thenReturn(Optional.of(reservationOne));
@@ -247,52 +264,4 @@ public final class ReservationServiceTest {
                 response.refundAmount()));
     }
 
-    /**
-     * Tests a full refund under the flexible policy.
-     */
-    @Test
-    public void testFlexiblePolicyFullRefund() {
-        testFullRefund(CancellationPolicy.FLEXIBLE, 25);
-    }
-
-    /**
-     * Tests a full refund under the moderate policy.
-     */
-    @Test
-    public void testModeratePolicyFullRefund() {
-        testFullRefund(CancellationPolicy.MODERATE, 169);
-    }
-
-    /**
-     * Tests a full refund under the strict policy.
-     */
-    @Test
-    public void testStrictPolicyFullRefund() {
-        testFullRefund(CancellationPolicy.STRICT, 337);
-    }
-
-    /**
-     * Verifies a full refund for the specified cancellation policy.
-     * 
-     * @param policy the cancellation policy
-     * @param hoursUntilStart hours remaining before the reservation
-     */
-    private void testFullRefund(
-        final CancellationPolicy policy,
-        final long hoursUntilStart) {
-
-        reservationOne.getSpace().setCancellationPolicy(policy);
-        reservationOne.setStartTime(
-                LocalDateTime.now().plusHours(hoursUntilStart));
-
-        when(reservationRepository.findById(100L))
-                .thenReturn(Optional.of(reservationOne));
-
-        final CancellationResponse response =
-                reservationService.cancelReservation(100L, "jsw2219");
-
-        assertEquals(ReservationStatus.CANCELLED, response.status());
-        assertEquals(0, new BigDecimal("50.00").compareTo(
-                response.refundAmount()));
-  }
 }

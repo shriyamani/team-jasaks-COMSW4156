@@ -49,11 +49,6 @@ public class Space {
     @ElementCollection
     private Set<String> amenities = new HashSet<>();
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private CancellationPolicy cancellationPolicy =
-            CancellationPolicy.FLEXIBLE;
-
     protected Space() {
     }
 
@@ -140,15 +135,6 @@ public class Space {
     }
 
     /**
-     * Returns the cancellation policy of the space.
-     * 
-     * @return the cancellation policy
-     */
-    public CancellationPolicy getCancellationPolicy() {
-        return cancellationPolicy;
-    }
-
-    /**
      * Sets the name of the space.
      *
      * @param spaceName new space name
@@ -183,15 +169,5 @@ public class Space {
     public void setAmenities(final Set<String> amenities) {
         this.amenities.clear();
         this.amenities.addAll(amenities);
-    }
-
-    /**
-     * Sets the cancellation policy of the space.
-     *
-     * @param cancellationPolicy new cancellation policy
-     */
-    public void setCancellationPolicy(
-        final CancellationPolicy cancellationPolicy) {
-        this.cancellationPolicy = cancellationPolicy;
     }
 }
