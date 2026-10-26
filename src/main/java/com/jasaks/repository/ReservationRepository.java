@@ -66,4 +66,25 @@ public interface ReservationRepository
      * @return list of reservations for the booker
      */
     List<Reservation> findByBookerBookerId(String bookerId);
+
+    /**
+     * Finds active reservations for a space overlapping a time window.
+     *
+     * @param spaceId the ID of the space
+     * @param start the start of the time window
+     * @param end the end of the time window
+     * @return list of overlapping active reservations
+     */
+    @Query("""
+        SELECT r from Reservation r
+        WHERE r.space.spaceId = :spaceId
+            AND r.status <> com.jasaks.model.ReservationStatus.CANCELLED
+            AND r.startTime < :end
+            AND r.endTime > :start
+    """)
+    List<Reservation> findActiveReservationsInWindow(
+            @Param("spaceId") Long spaceId,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end);
 }
+

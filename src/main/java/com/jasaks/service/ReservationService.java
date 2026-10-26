@@ -1,9 +1,18 @@
 package com.jasaks.service;
 
 import com.jasaks.dto.ReservationResponse;
+import com.jasaks.dto.CancellationResponse;
 import com.jasaks.model.Reservation;
+import com.jasaks.model.ReservationStatus;
+import com.jasaks.model.Place;
 import com.jasaks.repository.ReservationRepository;
+
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.Duration;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -108,5 +117,122 @@ public class ReservationService {
             }
         }
         return true;
+    }
+
+    /**
+     * Calculates the refund amount for a reservation based on 
+     * its cancellation policy and the time until the reservation starts.
+     * 
+     * @param reservation the reservation to calculate the refund for
+     * @return the refund amount
+     */
+    private BigDecimal calculateRefund(final Reservation reservation) {
+        Place place = reservation.getSpace().getPlace();
+        final ZoneId placeZone = ZoneId.of(place.getTimeZone());
+        final LocalDateTime currentTimeInPlace = LocalDateTime.now(placeZone);
+
+        final Duration timeUntilStart = Duration.between(
+            currentTimeInPlace,
+            reservation.getStartTime()
+        );
+
+        int refundHours = place.getRefundHours();
+        int refundPercent = place.getRefundPercent();
+
+        if (timeUntilStart.compareTo(Duration.ofHours(refundHours)) >= 0) {
+            final BigDecimal refundRate = BigDecimal.valueOf(refundPercent)
+                .divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
+
+            return reservation.getPrice()
+                .multiply(refundRate)
+                .setScale(2, RoundingMode.HALF_UP);
+        }
+        return BigDecimal.ZERO;
+    }
+
+    /**
+     * Generates an explanation for how refund amount was calculated 
+     * based on the cancellation policy and timing.
+     * 
+     * @param reservation
+     * @return the explanation string
+     */
+    private String getRefundExplanation(final Reservation reservation) {
+        Place place = reservation.getSpace().getPlace();
+        final ZoneId placeZone = ZoneId.of(place.getTimeZone());
+        final LocalDateTime currentTimeInPlace = LocalDateTime.now(placeZone);
+        
+        final Duration timeUntilStart = java.time.Duration.between(
+            currentTimeInPlace,
+            reservation.getStartTime()
+        );
+
+        int refundHours = place.getRefundHours();
+        int refundPercent = place.getRefundPercent();
+
+        if (timeUntilStart.compareTo(Duration.ofHours(refundHours)) >= 0) {
+            return "Refund = original price times " + refundPercent
+                + "% because cancellation occurred at least "
+                + refundHours + " hours before the start time.";
+        }
+
+        return "No refund because cancellation occurred less than "
+            + refundHours + "hours before the start time.";
+    
+    }
+
+    /**
+     * Cancels a reservation for a user.
+     * 
+     * @param reservationId the ID of the reservation to cancel
+     * @param bookerId the ID of the user trying to cancel the reservation
+     * @return the cancellation response
+     */
+    @Transactional
+    public CancellationResponse cancelReservation(
+            final Long reservationId,
+            final String bookerId) {
+
+        Reservation reservation = reservationRepository
+            .findById(reservationId)
+            .orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "Reservation not found"
+            ));
+
+        if (!reservation.getBooker().getBookerId().equals(bookerId)) {
+            throw new ResponseStatusException(
+                HttpStatus.FORBIDDEN,
+                "You cannot cancel this reservation"
+            );
+        }
+
+        if (reservation.getStatus() != ReservationStatus.CONFIRMED) {
+            throw new ResponseStatusException(
+                HttpStatus.CONFLICT,
+                "Reservation cannot be cancelled"
+            );
+        }
+
+        if (!reservation.getStartTime().isAfter(LocalDateTime.now(ZoneId.of(
+            reservation.getSpace().getPlace().getTimeZone())))) {
+            throw new ResponseStatusException(
+                HttpStatus.CONFLICT,
+                "Reservation has already started or passed"
+            );
+        }
+
+        BigDecimal refund = calculateRefund(reservation);
+
+        reservation.cancel(refund);
+        reservationRepository.save(reservation);
+
+        return new CancellationResponse(
+            reservation.getReservationId(),
+            reservation.getStatus(),
+            reservation.getRefundAmount(),
+            reservation.getCancelledAt(),
+            getRefundExplanation(reservation)
+        );
     }
 }

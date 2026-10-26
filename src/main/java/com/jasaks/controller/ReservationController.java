@@ -1,14 +1,19 @@
 package com.jasaks.controller;
 
 import com.jasaks.dto.ReservationResponse;
+import com.jasaks.dto.CancellationResponse;
 import com.jasaks.service.ReservationService;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * REST controller for handling reservation HTTP requests.
@@ -55,5 +60,27 @@ public class ReservationController {
             @RequestParam(required = false) final Long spaceId) {
         return reservationService.listUserReservations(
                 userId, startDate, endDate, placeId, spaceId);
+    }
+
+    /**
+     * Cancels a reservation for a user.
+     * 
+     * @param id the reservation ID
+     * @param bookerId the booker ID
+     * @return the cancellation response containing refund details
+     * @throws ResponseStatusException if the reservation cannot be cancelled
+     * @throws IllegalArgumentException if the refund amount is invalid
+     * @throws IllegalStateException if the reservation state or 
+     * cancellation policy is invalid
+     */
+    @PostMapping("/{id}/cancel")
+    public ResponseEntity<CancellationResponse> cancelReservation(
+            @PathVariable Long id,
+            @RequestParam String bookerId) {
+
+        CancellationResponse response =
+            reservationService.cancelReservation(id, bookerId);
+
+        return ResponseEntity.ok(response);
     }
 }
