@@ -184,6 +184,23 @@ class SpaceControllerTests {
                 .andExpect(status().isNotFound());
     }
 
+    @Test
+    void searchAvailableSpacesOkay() throws Exception {
+        Place place = createPlace("Columbia University");
+        Space space1 = createSpace(place, "Room A");
+        Space space2 = spaceRepository.save(new Space(
+                place, "Room B", 4, new BigDecimal("10.00"), Set.of("wifi", "tv")));
+
+        LocalDateTime start = LocalDateTime.of(2026, 11, 25, 14, 0, 0);
+        LocalDateTime end = LocalDateTime.of(2026, 11, 25, 18, 0, 0 );
+
+        mockMvc.perform(get("api/spaces/{placeId}")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(spaceRequestJson(place.getPlaceId(), start, end, 6)))
+                .andExpect(status().isOk());
+    }
+
+
     private Place createPlace(String name) {
         return placeRepository.save(new Place(
                 name,
@@ -219,5 +236,21 @@ class SpaceControllerTests {
                   "placeId": %d
                 }
                 """.formatted(name, capacity, hourlyRate, amenitiesJson, placeId);
+    }
+
+    private String spaceRequestJson(Long placeId, LocalDateTime start, LocalDateTime end, int minCapacity, String... amenities) {
+        String amenitiesJson = amenities.length == 0
+                ? ""
+                : "\"" + String.join("\",\"", amenities) + "\"";
+
+        return """
+                {
+                  "placeId": "%d",
+                  "start": %s,
+                  "end": %s,
+                  "minCapacity": %d,
+                  "amenities": [%s]
+                }
+                """.formatted(placeId, start, end, minCapacity, amenitiesJson);
     }
 }
