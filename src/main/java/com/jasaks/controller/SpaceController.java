@@ -110,6 +110,6 @@ public class SpaceController {
     @GetMapping("/{placeId}")
     public ResponseEntity<List<SpaceSearchResponse>> getAvailableSpaces(
             @RequestBody final SpaceSearchRequest request) {
-        return spaceService.findAvailableSpaces(request);
+        return ResponseEntity.ok(spaceService.findAvailableSpaces(request));
     }
 }
