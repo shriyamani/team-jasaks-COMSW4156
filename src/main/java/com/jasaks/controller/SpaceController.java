@@ -2,6 +2,7 @@ package com.jasaks.controller;
 
 import com.jasaks.dto.SpaceRequest;
 import com.jasaks.dto.SpaceResponse;
+import com.jasaks.dto.SpaceSearchRequest;
 import com.jasaks.dto.SpaceSearchResponse;
 import com.jasaks.service.SpaceService;
 import jakarta.validation.Valid;
@@ -19,7 +20,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 
 /**
  * REST endpoints for managing spaces.
@@ -105,15 +108,24 @@ public class SpaceController {
     /**
      * Gets available spaces for a given place.
      *
-     * @param request the search available spaces request
+     * @param placeName the name of the place
+     * @param startTime the startTime of possible reservation
+     * @param endTime the endTime of possible reservation
+     * @param minCapacity the minimum capacity of space needed
+     * @param amenities a list of desired amenities
      */
     @GetMapping("/search")
     public ResponseEntity<List<SpaceSearchResponse>> getAvailableSpaces(
             @RequestParam final String placeName,
             @RequestParam final String startTime,
-            @RequestParam (required = false) final String endTime,
-            @RequestParam final int minCapacity
+            @RequestParam final String endTime,
+            @RequestParam final int minCapacity,
+            @RequestParam(value = "amenities", required = false) final Set<String> amenities
             ) {
+        Long placeId = spaceService.findPlaceIdByName(placeName);
+        LocalDateTime start = LocalDateTime.parse(startTime);
+        LocalDateTime end = LocalDateTime.parse(endTime);
+        SpaceSearchRequest request = new SpaceSearchRequest(placeId, start, end, minCapacity, amenities);
         return ResponseEntity.ok(spaceService.findAvailableSpaces(request));
     }
 }
