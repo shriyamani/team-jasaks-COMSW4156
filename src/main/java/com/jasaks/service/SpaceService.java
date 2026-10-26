@@ -17,20 +17,38 @@ import java.util.List;
 @Service
 public class SpaceService {
 
+    /** Repository for space persistence. */
     private final SpaceRepository spaceRepository;
+
+    /** Repository for place lookups. */
     private final PlaceRepository placeRepository;
+
+    /** Repository for reservation lookups. */
     private final ReservationRepository reservationRepository;
 
-    public SpaceService(SpaceRepository spaceRepository,
-                        PlaceRepository placeRepository,
-                        ReservationRepository reservationRepository) {
+    /**
+     * Creates a service backed by the given repositories.
+     *
+     * @param spaceRepository repository for spaces
+     * @param placeRepository repository for places
+     * @param reservationRepository repository for reservations
+     */
+    public SpaceService(final SpaceRepository spaceRepository,
+                        final PlaceRepository placeRepository,
+                        final ReservationRepository reservationRepository) {
         this.spaceRepository = spaceRepository;
         this.placeRepository = placeRepository;
         this.reservationRepository = reservationRepository;
     }
 
+    /**
+     * Lists spaces, optionally filtered by place.
+     *
+     * @param placeId optional place identifier to filter by
+     * @return spaces matching the filter
+     */
     @Transactional(readOnly = true)
-    public List<SpaceResponse> getSpaces(Long placeId) {
+    public List<SpaceResponse> getSpaces(final Long placeId) {
         List<Space> spaces = placeId == null
                 ? spaceRepository.findAll()
                 : spaceRepository.findByPlace_PlaceId(placeId);
@@ -40,13 +58,25 @@ public class SpaceService {
                 .toList();
     }
 
+    /**
+     * Returns a single space.
+     *
+     * @param spaceId identifier of the space
+     * @return the requested space
+     */
     @Transactional(readOnly = true)
-    public SpaceResponse getSpace(Long spaceId) {
+    public SpaceResponse getSpace(final Long spaceId) {
         return SpaceResponse.from(findSpace(spaceId));
     }
 
+    /**
+     * Creates a space.
+     *
+     * @param request details of the space to create
+     * @return the created space
+     */
     @Transactional
-    public SpaceResponse createSpace(SpaceRequest request) {
+    public SpaceResponse createSpace(final SpaceRequest request) {
         Place place = findPlace(request.placeId());
 
         Space space = new Space(
@@ -60,8 +90,16 @@ public class SpaceService {
         return SpaceResponse.from(spaceRepository.save(space));
     }
 
+    /**
+     * Replaces an existing space.
+     *
+     * @param spaceId identifier of the space to update
+     * @param request new details for the space
+     * @return the updated space
+     */
     @Transactional
-    public SpaceResponse updateSpace(Long spaceId, SpaceRequest request) {
+    public SpaceResponse updateSpace(final Long spaceId,
+                                     final SpaceRequest request) {
         Space space = findSpace(spaceId);
         Place place = findPlace(request.placeId());
 
@@ -74,21 +112,27 @@ public class SpaceService {
         return SpaceResponse.from(spaceRepository.save(space));
     }
 
+    /**
+     * Deletes a space that has no reservations.
+     *
+     * @param spaceId identifier of the space to delete
+     */
     @Transactional
-    public void deleteSpace(Long spaceId) {
+    public void deleteSpace(final Long spaceId) {
         Space space = findSpace(spaceId);
 
-        if (reservationRepository.existsBySpace_SpaceId(spaceId)) {
+        if (reservationRepository.existsBySpaceSpaceId(spaceId)) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
-                    "Space " + spaceId + " has reservations and cannot be deleted"
+                    "Space " + spaceId
+                            + " has reservations and cannot be deleted"
             );
         }
 
         spaceRepository.delete(space);
     }
 
-    private Space findSpace(Long spaceId) {
+    private Space findSpace(final Long spaceId) {
         return spaceRepository.findById(spaceId)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
@@ -96,7 +140,7 @@ public class SpaceService {
                 ));
     }
 
-    private Place findPlace(Long placeId) {
+    private Place findPlace(final Long placeId) {
         return placeRepository.findById(placeId)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
