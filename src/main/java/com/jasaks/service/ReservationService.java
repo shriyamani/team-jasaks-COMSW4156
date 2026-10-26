@@ -2,6 +2,7 @@ package com.jasaks.service;
 
 import com.jasaks.dto.ReservationRequest;
 import com.jasaks.dto.ReservationResponse;
+import com.jasaks.dto.ReservationUpdateRequest;
 import com.jasaks.dto.CancellationResponse;
 import com.jasaks.model.Booker;
 import com.jasaks.model.Reservation;
@@ -292,6 +293,68 @@ public class ReservationService {
 
         return ReservationResponse.from(
                 reservationRepository.save(reservation));
+    }
+
+    /**
+     * Modifies a reservation, leaving omitted fields alone, and
+     * recalculates its price. Does not yet check that the reservation
+     * belongs to the booker.
+     *
+     * @param reservationId the reservation to modify
+     * @param request the fields to change
+     * @return the updated reservation, including its new price
+     */
+    @Transactional
+    public ReservationResponse modifyReservation(final Long reservationId,
+            final ReservationUpdateRequest request) {
+        final Reservation reservation = findReservation(reservationId);
+        findBooker(request.bookerId());
+
+        if (reservation.getStatus() == ReservationStatus.CANCELLED) {
+            throw conflict("Reservation " + reservationId
+                    + " has been cancelled and cannot be modified");
+        }
+
+        final Place currentPlace = reservation.getSpace().getPlace();
+        final LocalDateTime now =
+                LocalDateTime.now(ZoneId.of(currentPlace.getTimeZone()));
+        if (!reservation.getEndTime().isAfter(now)) {
+            throw conflict("Reservation " + reservationId
+                    + " has already passed and cannot be modified");
+        }
+
+        final Space space = request.spaceId() == null
+                ? reservation.getSpace()
+                : findSpace(request.spaceId());
+        final LocalDateTime start = request.startTime() == null
+                ? reservation.getStartTime()
+                : request.startTime();
+        final LocalDateTime end = request.endTime() == null
+                ? reservation.getEndTime()
+                : request.endTime();
+        final int groupSize = request.groupSize() == null
+                ? reservation.getGroupSize()
+                : request.groupSize();
+
+        requireOrderedWindow(start, end);
+        requireGroupFits(space, groupSize);
+        requireWithinOperatingHours(space.getPlace(), start, end);
+        requireNoOverlap(space, start, end, reservationId);
+
+        reservation.setSpace(space);
+        reservation.setStartTime(start);
+        reservation.setEndTime(end);
+        reservation.setGroupSize(groupSize);
+        reservation.setPrice(priceFor(space, start, end));
+
+        return ReservationResponse.from(
+                reservationRepository.save(reservation));
+    }
+
+    private Reservation findReservation(final Long reservationId) {
+        return reservationRepository.findById(reservationId)
+                .orElseThrow(() -> notFound(
+                        "Reservation not found: " + reservationId));
     }
 
     private void requireOrderedWindow(final LocalDateTime start,
