@@ -322,9 +322,9 @@ public class ReservationService {
         final Place currentPlace = reservation.getSpace().getPlace();
         final LocalDateTime now =
                 LocalDateTime.now(ZoneId.of(currentPlace.getTimeZone()));
-        if (!reservation.getEndTime().isAfter(now)) {
+        if (!reservation.getStartTime().isAfter(now)) {
             throw conflict("Reservation " + reservationId
-                    + " has already passed and cannot be modified");
+                    + " has already started and cannot be modified");
         }
 
         final Space space = request.spaceId() == null
@@ -341,6 +341,7 @@ public class ReservationService {
                 : request.groupSize();
 
         requireOrderedWindow(start, end);
+        requireFutureStart(space.getPlace(), start);
         requireGroupFits(space, groupSize);
         requireWithinOperatingHours(space.getPlace(), start, end);
         requireNoOverlap(space, start, end, reservationId);

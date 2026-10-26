@@ -142,7 +142,7 @@ class ModifyReservationApiTest {
               "endTime": "2030-06-10T10:00:00"
             }
             """)
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isUnprocessableContent());
     }
 
     @Test
@@ -174,7 +174,7 @@ class ModifyReservationApiTest {
     }
 
     @Test
-    void rejectsAReservationThatHasAlreadyPassed() throws Exception {
+    void rejectsAReservationThatHasAlreadyStarted() throws Exception {
         Long past = reservationRepository.save(new Reservation(
                 booker, space,
                 LocalDateTime.of(2020, 6, 10, 10, 0),
@@ -203,5 +203,17 @@ class ModifyReservationApiTest {
             {"bookerId": "booker-2", "groupSize": 2}
             """)
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void rejectsReschedulingIntoThePast() throws Exception {
+        send(reservationId, """
+            {
+              "bookerId": "booker-1",
+              "startTime": "2020-06-10T10:00:00",
+              "endTime": "2020-06-10T12:00:00"
+            }
+            """)
+                .andExpect(status().isUnprocessableContent());
     }
 }
