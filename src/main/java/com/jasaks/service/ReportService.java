@@ -136,7 +136,7 @@ public class ReportService {
             }
             spacesToEvaluate = List.of(space);
         } else {
-            spacesToEvaluate = spaceRepository.findByPlace_PlaceId(placeId);
+            spacesToEvaluate = spaceRepository.findByPlacePlaceId(placeId);
         }
 
         final List<SpaceMetrics> spaceMetricsList = new ArrayList<>();

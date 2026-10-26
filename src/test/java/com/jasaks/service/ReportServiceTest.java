@@ -177,7 +177,7 @@ public final class ReportServiceTest {
         final LocalDateTime end = LocalDateTime.of(2026, 11, 2, 0, 0);
 
         when(placeRepository.findById(1L)).thenReturn(Optional.of(place));
-        when(spaceRepository.findByPlace_PlaceId(1L))
+        when(spaceRepository.findByPlacePlaceId(1L))
                 .thenReturn(List.of(spaceOne, spaceTwo));
         when(reservationRepository.findActiveReservationsInWindow(
                 10L, start, end))
