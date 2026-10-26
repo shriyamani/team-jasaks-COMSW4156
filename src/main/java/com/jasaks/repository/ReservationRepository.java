@@ -7,27 +7,21 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
+
 /**
- * Repository interface for managing Reservation entities.
+ * Repository for {@link Reservation} entities.
  */
 public interface ReservationRepository
         extends JpaRepository<Reservation, Long> {
-
     /**
-     * Checks whether a space has any reservations.
+     * Checks whether any non-cancelled reservation for the space overlaps
+     * the given time period.
      *
-     * @param spaceId identifier of the space
-     * @return {@code true} when at least one reservation exists
-     */
-    boolean existsBySpaceSpaceId(Long spaceId);
-
-    /**
-     * Checks whether a reservation overlaps an interval for a space.
-     *
-     * @param spaceId identifier of the space
-     * @param start start of the interval
-     * @param end end of the interval
-     * @return {@code true} when an overlap exists
+     * @param spaceId id of the space
+     * @param start start of the time period
+     * @param end end of the time period
+     * @return true if an overlapping reservation exists
      */
     @Query("""
         SELECT COUNT(r) > 0 from Reservation r
@@ -42,13 +36,14 @@ public interface ReservationRepository
             @Param("end") LocalDateTime end);
 
     /**
-     * Checks whether another reservation overlaps an interval for a space.
+     * Checks whether any non-cancelled reservation for the space, other
+     * than the excluded one, overlaps the given time period.
      *
-     * @param spaceId identifier of the space
-     * @param start start of the interval
-     * @param end end of the interval
-     * @param excludeId identifier of the reservation to ignore
-     * @return {@code true} when an overlap exists
+     * @param spaceId id of the space
+     * @param start start of the time period
+     * @param end end of the time period
+     * @param excludeId id of the reservation to ignore
+     * @return true if an overlapping reservation exists
      */
     @Query("""
         SELECT COUNT(r) > 0 from Reservation r

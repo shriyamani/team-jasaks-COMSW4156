@@ -11,6 +11,9 @@ import jakarta.validation.constraints.PositiveOrZero;
 
 import java.time.LocalTime;
 
+/**
+ * Place: a location (eg. a building) that contains bookable spaces.
+ */
 @Entity
 @Table(name = "places")
 public class Place {
@@ -19,36 +22,41 @@ public class Place {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long placeId;
 
-    /** Human-readable name of the place. */
+    /** Name of the place. */
     private String placeName;
 
     /**
-     * The time zone of the place (for example, "America/New_York").
-     * Endpoints should calculate the current time in this zone, not UTC, to
-     * avoid time zone mismatches.
+     * The timezone that the Place you are creating is in
+     * (eg. "America/New_York").
+     * When writing API endpoints, server should calculate "now()" time
+     * using this field to avoid server (UTC) and place time zone
+     * mismatches. Make sure the server is calculating now() in timeZone,
+     * not in UTC.
+     *
+     * LocalDateTime now = LocalDateTime.now(ZoneId.of(place.getTimeZone()));
      */
     @Column(nullable = false)
     private String timeZone;
 
-    /** Time of day when the place opens. */
+    /** Daily opening time of the place. */
     @Column(nullable = false)
     private LocalTime openTime;
 
-    /** Time of day when the place closes. */
+    /** Daily closing time of the place. */
     @Column(nullable = false)
     private LocalTime closeTime;
 
-    /** Hours before a reservation start that qualify for a refund. */
+    /** Hours before a reservation within which refunds apply. */
     @PositiveOrZero
     private int refundHours;
 
-    /** Percentage of the reservation price that is refunded. */
+    /** Percentage of the price that is refunded (0-100). */
     @PositiveOrZero
     @Max(100)
     private int refundPercent;
 
-    protected Place() {
-    }
+    /** No-arg constructor required by JPA. */
+    protected Place() { }
 
     /**
      * Creates a place.
@@ -72,9 +80,9 @@ public class Place {
     }
 
     /**
-     * Returns the unique identifier of the place.
+     * Returns the place id.
      *
-     * @return the place identifier
+     * @return the place id
      */
     public Long getPlaceId() {
         return placeId;
@@ -99,7 +107,7 @@ public class Place {
     }
 
     /**
-     * Returns the time of day when the place opens.
+     * Returns the daily opening time.
      *
      * @return the opening time
      */
@@ -108,7 +116,7 @@ public class Place {
     }
 
     /**
-     * Returns the time of day when the place closes.
+     * Returns the daily closing time.
      *
      * @return the closing time
      */
@@ -119,7 +127,7 @@ public class Place {
     /**
      * Returns the refund window in hours.
      *
-     * @return hours before start that qualify for a refund
+     * @return the refund hours
      */
     public int getRefundHours() {
         return refundHours;
@@ -128,7 +136,7 @@ public class Place {
     /**
      * Returns the refund percentage.
      *
-     * @return percentage of the price refunded
+     * @return the refund percent
      */
     public int getRefundPercent() {
         return refundPercent;
@@ -153,9 +161,9 @@ public class Place {
     }
 
     /**
-     * Sets the closing time of the place.
+     * Sets the daily closing time.
      *
-     * @param closeTime new closing time
+     * @param closeTime the new closing time
      */
     public void setCloseTime(final LocalTime closeTime) {
         this.closeTime = closeTime;
@@ -164,7 +172,7 @@ public class Place {
     /**
      * Sets the refund window in hours.
      *
-     * @param refundHours new refund window
+     * @param refundHours the new refund hours
      */
     public void setRefundHours(final int refundHours) {
         this.refundHours = refundHours;
@@ -173,7 +181,7 @@ public class Place {
     /**
      * Sets the refund percentage.
      *
-     * @param refundPercent new refund percentage
+     * @param refundPercent the new refund percent
      */
     public void setRefundPercent(final int refundPercent) {
         this.refundPercent = refundPercent;
