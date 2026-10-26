@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.HashSet;
 import java.util.Set;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.Duration;
 
 @Service
@@ -165,14 +166,28 @@ public class SpaceService {
                     "startTime must be before endTime");
         }
 
-        findPlace(request.placeId());
+        Place searchedPlace = findPlace(request.placeId());
+        LocalTime openTime = searchedPlace.getOpenTime();
+        LocalTime closeTime = searchedPlace.getCloseTime();
+
+        int totalHours = BigDecimal.valueOf(Duration.between(request.startTime(), request.endTime()).toHours()).intValueExact();
+
+        if (totalHours > 24) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT,
+                    "startTime and endTime duration must be less than 24 hours");
+        }
+
+        if (request.startTime().toLocalTime().isBefore(openTime) ||
+            request.endTime().toLocalTime().isAfter(closeTime)) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT,
+                    "startTime and endTime must be between " + openTime + "and " + closeTime + ".");
+        }
 
         List<Space> spaces = spaceRepository.findByPlace_PlaceId(request.placeId());
         List<SpaceSearchResponse> available = new ArrayList<>();
         LocalDateTime start = request.startTime();
         LocalDateTime end = request.endTime();
-        BigDecimal hours = BigDecimal.valueOf(Duration.between(start, end).toMinutes())
-                .divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP);
+        BigDecimal minutes = BigDecimal.valueOf(Duration.between(start, end).toMinutes()).divide(BigDecimal.valueOf(60));
 
         for (Space space: spaces) {
             if (!request.amenities().isEmpty()) {
@@ -190,9 +205,10 @@ public class SpaceService {
                 continue;
             }
 
-            BigDecimal price = space.getHourlyRate().multiply(hours);
+            BigDecimal hourlyRate = space.getHourlyRate();
+            BigDecimal price = hourlyRate.multiply(minutes).setScale(2, RoundingMode.HALF_UP);
 
-            SpaceSearchResponse response  = new SpaceSearchResponse(space, price);
+            SpaceSearchResponse response  = new SpaceSearchResponse(SpaceResponse.from(space), price);
             available.add(response);
         }
         return available;
