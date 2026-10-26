@@ -18,44 +18,83 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * REST endpoints for managing spaces.
+ */
 @RestController
 @RequestMapping("/api/spaces")
 public class SpaceController {
 
+    /** Service used to manage spaces. */
     private final SpaceService spaceService;
 
-    public SpaceController(SpaceService spaceService) {
+    /**
+     * Creates a controller backed by the given service.
+     *
+     * @param spaceService service used to manage spaces
+     */
+    public SpaceController(final SpaceService spaceService) {
         this.spaceService = spaceService;
     }
 
     /**
      * Lists spaces, optionally restricted to a single place.
+     *
+     * @param placeId optional place identifier to filter by
+     * @return spaces matching the filter
      */
     @GetMapping
-    public List<SpaceResponse> getSpaces(@RequestParam(required = false) Long placeId) {
+    public List<SpaceResponse> getSpaces(
+            @RequestParam(required = false) final Long placeId) {
         return spaceService.getSpaces(placeId);
     }
 
+    /**
+     * Returns a single space.
+     *
+     * @param spaceId identifier of the space
+     * @return the requested space
+     */
     @GetMapping("/{spaceId}")
-    public SpaceResponse getSpace(@PathVariable Long spaceId) {
+    public SpaceResponse getSpace(@PathVariable final Long spaceId) {
         return spaceService.getSpace(spaceId);
     }
 
+    /**
+     * Creates a new space.
+     *
+     * @param request details of the space to create
+     * @return the created space
+     */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public SpaceResponse createSpace(@Valid @RequestBody SpaceRequest request) {
+    public SpaceResponse createSpace(
+            @Valid @RequestBody final SpaceRequest request) {
         return spaceService.createSpace(request);
     }
 
+    /**
+     * Replaces an existing space.
+     *
+     * @param spaceId identifier of the space to update
+     * @param request new details for the space
+     * @return the updated space
+     */
     @PutMapping("/{spaceId}")
-    public SpaceResponse updateSpace(@PathVariable Long spaceId,
-                                     @Valid @RequestBody SpaceRequest request) {
+    public SpaceResponse updateSpace(
+            @PathVariable final Long spaceId,
+            @Valid @RequestBody final SpaceRequest request) {
         return spaceService.updateSpace(spaceId, request);
     }
 
+    /**
+     * Deletes a space that has no reservations.
+     *
+     * @param spaceId identifier of the space to delete
+     */
     @DeleteMapping("/{spaceId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteSpace(@PathVariable Long spaceId) {
+    public void deleteSpace(@PathVariable final Long spaceId) {
         spaceService.deleteSpace(spaceId);
     }
 }

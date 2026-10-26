@@ -14,20 +14,20 @@ public interface ReservationRepository
         extends JpaRepository<Reservation, Long> {
 
     /**
-     * Checks if any reservation exists for a given space ID.
+     * Checks whether a space has any reservations.
      *
-     * @param spaceId the ID of the space
-     * @return true if a reservation exists, false otherwise
+     * @param spaceId identifier of the space
+     * @return {@code true} when at least one reservation exists
      */
     boolean existsBySpaceSpaceId(Long spaceId);
 
     /**
-     * Checks if there is an overlapping reservation for a space.
+     * Checks whether a reservation overlaps an interval for a space.
      *
-     * @param spaceId the ID of the space
-     * @param start the start time
-     * @param end the end time
-     * @return true if an overlap exists, false otherwise
+     * @param spaceId identifier of the space
+     * @param start start of the interval
+     * @param end end of the interval
+     * @return {@code true} when an overlap exists
      */
     @Query("""
         SELECT COUNT(r) > 0 from Reservation r
@@ -42,13 +42,13 @@ public interface ReservationRepository
             @Param("end") LocalDateTime end);
 
     /**
-     * Checks for overlapping reservations excluding a specific reservation.
+     * Checks whether another reservation overlaps an interval for a space.
      *
-     * @param spaceId the ID of the space
-     * @param start the start time
-     * @param end the end time
-     * @param excludeId the reservation ID to exclude
-     * @return true if an overlap exists, false otherwise
+     * @param spaceId identifier of the space
+     * @param start start of the interval
+     * @param end end of the interval
+     * @param excludeId identifier of the reservation to ignore
+     * @return {@code true} when an overlap exists
      */
     @Query("""
         SELECT COUNT(r) > 0 from Reservation r
