@@ -95,7 +95,7 @@ class CreateReservationApiTest {
     @Test
     void rejectsAWindowOutsideOperatingHours() throws Exception {
         send(body("2030-06-10T08:00:00", "2030-06-10T10:00:00", 2))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isUnprocessableContent());
     }
 
     @Test

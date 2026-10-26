@@ -313,8 +313,8 @@ public class ReservationService {
         if (!start.toLocalDate().equals(end.toLocalDate())
                 || start.toLocalTime().isBefore(place.getOpenTime())
                 || end.toLocalTime().isAfter(place.getCloseTime())) {
-            throw badRequest("Reservation must fall on one day within the "
-                    + "operating hours of place " + place.getPlaceId()
+            throw unprocessable("Reservation must fall on one day within "
+                    + "the operating hours of place " + place.getPlaceId()
                     + " (" + place.getOpenTime() + " to "
                     + place.getCloseTime() + ")");
         }
@@ -361,6 +361,11 @@ public class ReservationService {
     private ResponseStatusException badRequest(final String message) {
         return new ResponseStatusException(
                 HttpStatus.BAD_REQUEST, message);
+    }
+
+    private ResponseStatusException unprocessable(final String message) {
+        return new ResponseStatusException(
+                HttpStatus.UNPROCESSABLE_CONTENT, message);
     }
 
     private ResponseStatusException notFound(final String message) {
