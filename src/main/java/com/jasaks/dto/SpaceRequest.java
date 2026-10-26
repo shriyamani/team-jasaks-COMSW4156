@@ -8,6 +8,7 @@ import jakarta.validation.constraints.PositiveOrZero;
 import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Payload for creating or replacing a space.
@@ -40,6 +41,8 @@ public record SpaceRequest(
     public SpaceRequest {
         amenities = amenities == null
                 ? new HashSet<>()
-                : new HashSet<>(amenities);
+                : new HashSet<>(amenities.stream()
+                    .map(String::toLowerCase)
+                    .collect(Collectors.toSet()));
     }
 }
