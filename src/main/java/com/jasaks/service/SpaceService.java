@@ -158,6 +158,10 @@ public class SpaceService {
                 ));
     }
 
+    public Long findPlaceIdByName(final String placeName) {
+        return placeRepository.findIdByName(placeName);
+    }
+
     public List<SpaceSearchResponse> findAvailableSpaces(final SpaceSearchRequest request) {
 
         if (request.startTime() == null || request.endTime() == null
