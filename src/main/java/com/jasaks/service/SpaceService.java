@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.HashSet;
@@ -158,33 +159,37 @@ public class SpaceService {
 
     public List<SpaceSearchResponse> findAvailableSpaces(final SpaceSearchRequest request) {
 
+        if (request.startTime() == null || request.endTime() == null
+                || !request.startTime().isBefore(request.endTime())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "startTime must be before endTime");
+        }
+
         findPlace(request.placeId());
 
         List<Space> spaces = spaceRepository.findByPlace_PlaceId(request.placeId());
-        List<SpaceSearchResponse> available = new ArrayList<SpaceSearchResponse>();
+        List<SpaceSearchResponse> available = new ArrayList<>();
         LocalDateTime start = request.startTime();
         LocalDateTime end = request.endTime();
-        Duration duration = Duration.between(start, end);
+        BigDecimal hours = BigDecimal.valueOf(Duration.between(start, end).toMinutes())
+                .divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP);
 
         for (Space space: spaces) {
             if (!request.amenities().isEmpty()) {
                 Set<String> availableAmenities = space.getAmenities();
                 if (!availableAmenities.containsAll(request.amenities())) {
-                    spaces.remove(space);
                     continue;
                 }
             }
 
             if (space.getCapacity() < request.minCapacity()) {
-                spaces.remove(space);
                 continue;
             }
 
             if (reservationRepository.hasOverlap(space.getSpaceId(), request.startTime(), request.endTime())) {
-                spaces.remove(space);
+                continue;
             }
 
-            BigDecimal hours = BigDecimal.valueOf(duration.toHoursPart());
             BigDecimal price = space.getHourlyRate().multiply(hours);
 
             SpaceSearchResponse response  = new SpaceSearchResponse(space, price);

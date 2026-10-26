@@ -26,6 +26,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -194,9 +195,10 @@ class SpaceControllerTests {
         LocalDateTime start = LocalDateTime.of(2026, 11, 25, 14, 0, 0);
         LocalDateTime end = LocalDateTime.of(2026, 11, 25, 18, 0, 0 );
 
-        mockMvc.perform(get("api/spaces/{placeId}")
+        mockMvc.perform(get("/api/spaces/search")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(spaceRequestJson(place.getPlaceId(), start, end, 6)))
+                        .content(spaceRequestJson(place.getPlaceId(), start, end, 6, "wifi")))
+                .andDo(print())
                 .andExpect(status().isOk());
     }
 
@@ -245,9 +247,9 @@ class SpaceControllerTests {
 
         return """
                 {
-                  "placeId": "%d",
-                  "start": %s,
-                  "end": %s,
+                  "placeId": %d,
+                  "startTime": "%s",
+                  "endTime": "%s",
                   "minCapacity": %d,
                   "amenities": [%s]
                 }

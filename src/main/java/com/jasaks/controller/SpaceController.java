@@ -107,7 +107,7 @@ public class SpaceController {
      *
      * @param request the search available spaces request
      */
-    @GetMapping("/{placeId}")
+    @GetMapping("/search")
     public ResponseEntity<List<SpaceSearchResponse>> getAvailableSpaces(
             @RequestBody final SpaceSearchRequest request) {
         return ResponseEntity.ok(spaceService.findAvailableSpaces(request));
