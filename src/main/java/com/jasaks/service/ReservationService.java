@@ -297,8 +297,7 @@ public class ReservationService {
 
     /**
      * Modifies a reservation, leaving omitted fields alone, and
-     * recalculates its price. Does not yet check that the reservation
-     * belongs to the booker.
+     * recalculates its price.
      *
      * @param reservationId the reservation to modify
      * @param request the fields to change
@@ -309,6 +308,11 @@ public class ReservationService {
             final ReservationUpdateRequest request) {
         final Reservation reservation = findReservation(reservationId);
         findBooker(request.bookerId());
+
+        if (!reservation.getBooker().getBookerId()
+                .equals(request.bookerId())) {
+            throw forbidden("You cannot modify this reservation");
+        }
 
         if (reservation.getStatus() == ReservationStatus.CANCELLED) {
             throw conflict("Reservation " + reservationId
@@ -440,6 +444,11 @@ public class ReservationService {
     private ResponseStatusException unprocessable(final String message) {
         return new ResponseStatusException(
                 HttpStatus.UNPROCESSABLE_CONTENT, message);
+    }
+
+    private ResponseStatusException forbidden(final String message) {
+        return new ResponseStatusException(
+                HttpStatus.FORBIDDEN, message);
     }
 
     private ResponseStatusException notFound(final String message) {

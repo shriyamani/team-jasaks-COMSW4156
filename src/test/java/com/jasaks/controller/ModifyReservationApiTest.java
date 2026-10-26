@@ -194,4 +194,14 @@ class ModifyReservationApiTest {
             """)
                 .andExpect(status().isNotFound());
     }
+
+    @Test
+    void rejectsAModificationByAnotherBooker() throws Exception {
+        bookerRepository.save(new Booker("booker-2", "Bob"));
+
+        send(reservationId, """
+            {"bookerId": "booker-2", "groupSize": 2}
+            """)
+                .andExpect(status().isForbidden());
+    }
 }
