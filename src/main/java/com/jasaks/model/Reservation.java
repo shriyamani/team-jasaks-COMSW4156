@@ -50,6 +50,15 @@ public class Reservation {
     @Column(nullable = false)
     private ReservationStatus status;
 
+    /** Time when the reservation was cancelled */
+    @Column
+    private Instant cancelledAt;
+
+    /** The amount that will be refunded to the booker */
+    @PositiveOrZero
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal refundAmount;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "booker_id")
     private Booker booker;
@@ -68,6 +77,7 @@ public class Reservation {
         this.groupSize = groupSize;
         this.price = price;
         this.status = ReservationStatus.CONFIRMED;
+        this.refundAmount = BigDecimal.ZERO;
     }
 
     public Long getReservationId() {
@@ -106,6 +116,24 @@ public class Reservation {
         return status;
     }
 
+    /**
+     * Returns the time of cancellation if the reservation was cancelled.
+     * 
+     * @return the cancellation time
+     */
+    public Instant getCancelledAt() {
+        return cancelledAt;
+    }
+
+    /**
+     * Returns the refund amount if the reservation was cancelled.
+     * 
+     * @return the refund amount
+     */
+    public BigDecimal getRefundAmount() {
+        return refundAmount;
+    }
+
     public void setEndTime(LocalDateTime endTime) {
         this.endTime = endTime;
     }
@@ -128,6 +156,32 @@ public class Reservation {
 
     public void setSpace(Space space) {
         this.space = space;
+    }
+
+    /**
+     * Cancels the reservation and sets the refund amount.
+     * 
+     * @param refundAmount the amount to be refunded
+     */
+    public void cancel(final BigDecimal refundAmount) {
+        if (this.status != ReservationStatus.CONFIRMED) {
+            throw new IllegalStateException(
+                "Only confirmed reservations can be cancelled"
+            );
+        }
+
+        if (refundAmount == null
+                || refundAmount.signum() < 0
+                || refundAmount.compareTo(price) > 0
+                || refundAmount.scale() > 2) {
+            throw new IllegalArgumentException(
+                "Invalid refund amount"
+            );
+        }
+
+        this.status = ReservationStatus.CANCELLED;
+        this.cancelledAt = Instant.now();
+        this.refundAmount = refundAmount;
     }
 
     @PrePersist

@@ -4,12 +4,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 
 import com.jasaks.dto.ReservationResponse;
+import com.jasaks.dto.CancellationResponse;
 import com.jasaks.model.Booker;
 import com.jasaks.model.Place;
 import com.jasaks.model.Reservation;
 import com.jasaks.model.Space;
+import com.jasaks.model.ReservationStatus;
 import com.jasaks.repository.ReservationRepository;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
@@ -17,6 +20,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -192,4 +196,72 @@ public final class ReservationServiceTest {
         assertEquals(HttpStatus.BAD_REQUEST,
                 dateOrderException.getStatusCode());
     }
+
+    /**
+     * Tests successful cancellation with a full refund.
+     */
+    @Test
+    public void testCancelReservationSuccess() {
+        reservationOne.getSpace().getPlace().setRefundHours(2);
+        reservationOne.getSpace().getPlace().setRefundPercent(50);
+        reservationOne.setStartTime(LocalDateTime.now().plusHours(3));
+
+        when(reservationRepository.findById(100L))
+                .thenReturn(Optional.of(reservationOne));
+
+        final CancellationResponse response = reservationService.cancelReservation(100L, "jsw2219");
+
+        assertNotNull(response);
+        assertEquals(100L, response.reservationId());
+        assertEquals(ReservationStatus.CANCELLED, response.status());
+        assertEquals(0, new BigDecimal("25.00").compareTo(
+                response.refundAmount()));
+        assertNotNull(response.cancelledAt());
+
+        verify(reservationRepository).save(reservationOne);
+
+    }
+    
+    /**
+     * Tests no refund when cancellation is too close to the start time.
+     */
+    @Test
+    public void testCancelReservationNoRefundWhenTooClose() {
+        reservationOne.getSpace().getPlace().setRefundHours(2);
+        reservationOne.getSpace().getPlace().setRefundPercent(50);
+
+        reservationOne.setStartTime(LocalDateTime.now().plusHours(1));
+
+        when(reservationRepository.findById(100L))
+                .thenReturn(Optional.of(reservationOne));
+
+        final CancellationResponse response =
+                reservationService.cancelReservation(100L, "jsw2219");
+
+        assertEquals(ReservationStatus.CANCELLED, response.status());
+        assertEquals(0, BigDecimal.ZERO.compareTo(
+                response.refundAmount()));
+    }
+
+    /**
+     * Tests full refund when cancellation before the required lead time.
+     */
+    @Test
+    public void testRefundWhenAtLeastRefundHoursBeforeStart() {
+        reservationOne.getSpace().getPlace().setRefundHours(2);
+        reservationOne.getSpace().getPlace().setRefundPercent(50);
+
+        reservationOne.setStartTime(LocalDateTime.now().plusHours(3));
+
+        when(reservationRepository.findById(100L))
+                .thenReturn(Optional.of(reservationOne));
+
+        final CancellationResponse response =
+                reservationService.cancelReservation(100L, "jsw2219");
+
+        assertEquals(ReservationStatus.CANCELLED, response.status());
+        assertEquals(0, new BigDecimal("25.00").compareTo(
+                response.refundAmount()));
+    }
+
 }
