@@ -125,4 +125,10 @@ class CreateReservationApiTest {
             }
             """).andExpect(status().isNotFound());
     }
+
+    @Test
+    void rejectsAWindowInThePast() throws Exception {
+        send(body("2020-06-10T10:00:00", "2020-06-10T12:00:00", 2))
+                .andExpect(status().isUnprocessableContent());
+    }
 }

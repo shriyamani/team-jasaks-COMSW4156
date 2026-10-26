@@ -281,6 +281,7 @@ public class ReservationService {
         final Booker booker = findBooker(request.bookerId());
         final Space space = findSpace(request.spaceId());
 
+        requireFutureStart(space.getPlace(), start);
         requireGroupFits(space, request.groupSize());
         requireWithinOperatingHours(space.getPlace(), start, end);
         requireNoOverlap(space, start, end, null);
@@ -297,6 +298,16 @@ public class ReservationService {
             final LocalDateTime end) {
         if (!end.isAfter(start)) {
             throw badRequest("endTime must be after startTime");
+        }
+    }
+
+    private void requireFutureStart(final Place place,
+            final LocalDateTime start) {
+        final LocalDateTime now =
+                LocalDateTime.now(ZoneId.of(place.getTimeZone()));
+        if (!start.isAfter(now)) {
+            throw unprocessable(
+                    "startTime must be in the future");
         }
     }
 
