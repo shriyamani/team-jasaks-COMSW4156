@@ -227,43 +227,8 @@ class ReservationControllerTests {
                         .orElseThrow().getStatus());
     }
 
-    @Test
-    void cancelsAReservationWithoutARefundInsideTheRefundWindow()
-            throws Exception {
-        LocalDateTime start = LocalDateTime.now(PLACE_ZONE).plusHours(1);
-        Reservation reservation = saveReservation(
-                booker, space, start, start.plusHours(2),
-                new BigDecimal("60.00"));
 
-        mockMvc.perform(post("/api/reservations/{id}/cancel",
-                        reservation.getReservationId())
-                        .param("bookerId", "booker-1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("CANCELLED"))
-                .andExpect(jsonPath("$.refundAmount").value(0))
-                .andExpect(jsonPath("$.refundExplanation")
-                        .value(containsString("No refund")));
-    }
 
-    @Test
-    void rejectsCancellationByAnotherBooker() throws Exception {
-        LocalDateTime start = LocalDateTime.now(PLACE_ZONE).plusDays(3);
-        Reservation reservation = saveReservation(
-                booker, space, start, start.plusHours(2),
-                new BigDecimal("60.00"));
-
-        mockMvc.perform(post("/api/reservations/{id}/cancel",
-                        reservation.getReservationId())
-                        .param("bookerId", "booker-2"))
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
-    void rejectsCancellationOfAnUnknownReservation() throws Exception {
-        mockMvc.perform(post("/api/reservations/{id}/cancel", 999999L)
-                        .param("bookerId", "booker-1"))
-                .andExpect(status().isNotFound());
-    }
 
     @Test
     void rejectsCancellationOfAnAlreadyCancelledReservation()

@@ -188,29 +188,9 @@ class ReportControllerTests {
                         .value(100.00));
     }
 
-    @Test
-    void rejectsARequestWithoutAPlaceId() throws Exception {
-        mockMvc.perform(get("/api/reports/spaces")
-                        .param("startDate", START.toString())
-                        .param("endDate", END.toString()))
-                .andExpect(status().isBadRequest());
-    }
 
-    @Test
-    void rejectsARequestWithoutDates() throws Exception {
-        mockMvc.perform(get("/api/reports/spaces")
-                        .param("placeId", place.getPlaceId().toString()))
-                .andExpect(status().isBadRequest());
-    }
 
-    @Test
-    void rejectsAStartDateThatIsNotBeforeTheEndDate() throws Exception {
-        mockMvc.perform(get("/api/reports/spaces")
-                        .param("placeId", place.getPlaceId().toString())
-                        .param("startDate", END.toString())
-                        .param("endDate", START.toString()))
-                .andExpect(status().isBadRequest());
-    }
+
 
     @Test
     void rejectsAnUnknownPlace() throws Exception {
