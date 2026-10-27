@@ -2,6 +2,7 @@ package com.jasaks.controller;
 
 import com.jasaks.dto.ReservationRequest;
 import com.jasaks.dto.ReservationResponse;
+import com.jasaks.dto.ReservationUpdateRequest;
 import com.jasaks.dto.CancellationResponse;
 import com.jasaks.service.ReservationService;
 import jakarta.validation.Valid;
@@ -11,6 +12,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -100,5 +102,19 @@ public class ReservationController {
     public ReservationResponse createReservation(
             @Valid @RequestBody final ReservationRequest request) {
         return reservationService.createReservation(request);
+    }
+
+    /**
+     * Modifies a reservation; omitted fields keep their current value.
+     *
+     * @param reservationId the reservation to modify
+     * @param request the fields to change
+     * @return the updated reservation, including its new price
+     */
+    @PatchMapping("/{reservationId}")
+    public ReservationResponse modifyReservation(
+            @PathVariable final Long reservationId,
+            @Valid @RequestBody final ReservationUpdateRequest request) {
+        return reservationService.modifyReservation(reservationId, request);
     }
 }
