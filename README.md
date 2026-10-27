@@ -636,6 +636,11 @@ Tasks for each team member are tracked in GitHub Projects: https://github.com/us
   their endpoints, there needs to be a shared foundation upon which to iterate. Help ideate on the data model for this
   API service: the entities, repositories and error handling that every endpoint will use.
   - ~12,000 tokens
+- **Prompt:** Help create the API tests necessary using Postman. Create both the seed file as well as the run commands
+  - ~19,500 tokens
+- **Prompt:** Help create the README for this repository. Be sure to format everything clearly, and include information about Postman,
+checkstyle and test reports, and refine the endpoints logic.
+  - ~36,000 tokens
 
 **Files that contain AI-generated elements:**
 
