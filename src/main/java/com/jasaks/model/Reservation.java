@@ -57,15 +57,16 @@ public class Reservation {
     @Column(nullable = false)
     private ReservationStatus status;
 
-    /** Time when the reservation was cancelled */
+    /** Time when the reservation was cancelled. */
     @Column
     private Instant cancelledAt;
 
-    /** The amount that will be refunded to the booker */
+    /** The amount that will be refunded to the booker. */
     @PositiveOrZero
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal refundAmount;
 
+    /** The booker who made the reservation. */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "booker_id")
     private Booker booker;
@@ -201,7 +202,12 @@ public class Reservation {
         return refundAmount;
     }
 
-    public void setEndTime(LocalDateTime endTime) {
+    /**
+     * Sets the end time.
+     *
+     * @param endTime the new end time
+     */
+    public void setEndTime(final LocalDateTime endTime) {
         this.endTime = endTime;
     }
 
@@ -253,19 +259,19 @@ public class Reservation {
     /**
      * Cancels the reservation and sets the refund amount.
      * 
-     * @param refundAmount the amount to be refunded
+     * @param amount the amount to be refunded
      */
-    public void cancel(final BigDecimal refundAmount) {
+    public void cancel(final BigDecimal amount) {
         if (this.status != ReservationStatus.CONFIRMED) {
             throw new IllegalStateException(
                 "Only confirmed reservations can be cancelled"
             );
         }
 
-        if (refundAmount == null
-                || refundAmount.signum() < 0
-                || refundAmount.compareTo(price) > 0
-                || refundAmount.scale() > 2) {
+        if (amount == null
+                || amount.signum() < 0
+                || amount.compareTo(price) > 0
+                || amount.scale() > 2) {
             throw new IllegalArgumentException(
                 "Invalid refund amount"
             );
@@ -273,9 +279,12 @@ public class Reservation {
 
         this.status = ReservationStatus.CANCELLED;
         this.cancelledAt = Instant.now();
-        this.refundAmount = refundAmount;
+        this.refundAmount = amount;
     }
 
+    /**
+     * Sets the creation timestamp before the reservation is first persisted.
+     */
     @PrePersist
     public void onCreate() {
         this.createdAt = Instant.now();

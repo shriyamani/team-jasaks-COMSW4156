@@ -113,6 +113,7 @@ public class SpaceController {
      * @param endTime the endTime of possible reservation
      * @param minCapacity the minimum capacity of space needed
      * @param amenities a list of desired amenities
+     * @return the available spaces with their estimated prices
      */
     @GetMapping("/search")
     public ResponseEntity<List<SpaceSearchResponse>> getAvailableSpaces(
@@ -120,12 +121,14 @@ public class SpaceController {
             @RequestParam final String startTime,
             @RequestParam final String endTime,
             @RequestParam final int minCapacity,
-            @RequestParam(value = "amenities", required = false) final Set<String> amenities
+            @RequestParam(value = "amenities", required = false)
+            final Set<String> amenities
             ) {
         Long placeId = spaceService.findPlaceIdByName(placeName);
         LocalDateTime start = LocalDateTime.parse(startTime);
         LocalDateTime end = LocalDateTime.parse(endTime);
-        SpaceSearchRequest request = new SpaceSearchRequest(placeId, start, end, minCapacity, amenities);
+        SpaceSearchRequest request = new SpaceSearchRequest(
+                placeId, start, end, minCapacity, amenities);
         return ResponseEntity.ok(spaceService.findAvailableSpaces(request));
     }
 }
