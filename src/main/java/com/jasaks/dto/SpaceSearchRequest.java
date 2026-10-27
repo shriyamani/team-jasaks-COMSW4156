@@ -1,8 +1,6 @@
 package com.jasaks.dto;
 
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import org.springframework.format.annotation.DateTimeFormat;
 
@@ -37,7 +35,7 @@ public record SpaceSearchRequest(
     int minCapacity,
 
     Set<String> amenities
-){
+) {
     /**
      * Creates a space search request and defensively copies the amenities.
      */

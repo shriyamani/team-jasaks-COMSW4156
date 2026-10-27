@@ -145,8 +145,10 @@ public class SpaceService {
      * Searches for available spaces that match given parameters.
      *
      * @param request the object representing the search request parameters
+     * @return the available spaces with their estimated prices
      */
-    public List<SpaceSearchResponse> findAvailableSpaces(final SpaceSearchRequest request) {
+    public List<SpaceSearchResponse> findAvailableSpaces(
+            final SpaceSearchRequest request) {
 
         if (request.startTime() == null || request.endTime() == null
                 || !request.startTime().isBefore(request.endTime())) {
@@ -158,24 +160,33 @@ public class SpaceService {
         LocalTime openTime = searchedPlace.getOpenTime();
         LocalTime closeTime = searchedPlace.getCloseTime();
 
-        int totalHours = BigDecimal.valueOf(Duration.between(request.startTime(), request.endTime()).toHours()).intValueExact();
+        int totalHours = BigDecimal.valueOf(Duration.between(
+                request.startTime(), request.endTime()).toHours())
+                .intValueExact();
 
         if (totalHours > 24) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT,
-                    "startTime and endTime duration must be less than 24 hours");
+            throw new ResponseStatusException(
+                    HttpStatus.UNPROCESSABLE_CONTENT,
+                    "startTime and endTime duration must be less than"
+                            + " 24 hours");
         }
 
-        if (request.startTime().toLocalTime().isBefore(openTime) ||
-                request.endTime().toLocalTime().isAfter(closeTime)) {
-            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT,
-                    "startTime and endTime must be between " + openTime + "and " + closeTime + ".");
+        if (request.startTime().toLocalTime().isBefore(openTime)
+                || request.endTime().toLocalTime().isAfter(closeTime)) {
+            throw new ResponseStatusException(
+                    HttpStatus.UNPROCESSABLE_CONTENT,
+                    "startTime and endTime must be between " + openTime
+                            + " and " + closeTime + ".");
         }
 
-        List<Space> spaces = spaceRepository.findByPlacePlaceId(request.placeId());
+        List<Space> spaces =
+                spaceRepository.findByPlacePlaceId(request.placeId());
         List<SpaceSearchResponse> available = new ArrayList<>();
         LocalDateTime start = request.startTime();
         LocalDateTime end = request.endTime();
-        BigDecimal minutes = BigDecimal.valueOf(Duration.between(start, end).toMinutes()).divide(BigDecimal.valueOf(60));
+        BigDecimal minutes = BigDecimal.valueOf(
+                Duration.between(start, end).toMinutes())
+                .divide(BigDecimal.valueOf(60));
 
         for (Space space: spaces) {
             if (!request.amenities().isEmpty()) {
@@ -189,14 +200,17 @@ public class SpaceService {
                 continue;
             }
 
-            if (reservationRepository.hasOverlap(space.getSpaceId(), request.startTime(), request.endTime())) {
+            if (reservationRepository.hasOverlap(space.getSpaceId(),
+                    request.startTime(), request.endTime())) {
                 continue;
             }
 
             BigDecimal hourlyRate = space.getHourlyRate();
-            BigDecimal price = hourlyRate.multiply(minutes).setScale(2, RoundingMode.HALF_UP);
+            BigDecimal price = hourlyRate.multiply(minutes)
+                    .setScale(2, RoundingMode.HALF_UP);
 
-            SpaceSearchResponse response  = new SpaceSearchResponse(SpaceResponse.from(space), price);
+            SpaceSearchResponse response =
+                    new SpaceSearchResponse(SpaceResponse.from(space), price);
             available.add(response);
         }
         return available;
@@ -218,6 +232,12 @@ public class SpaceService {
                 ));
     }
 
+    /**
+     * Finds the ID of a place by its name.
+     *
+     * @param placeName the name of the place
+     * @return the place ID, or null if no place has that name
+     */
     public Long findPlaceIdByName(final String placeName) {
         return placeRepository.findIdByName(placeName);
     }
