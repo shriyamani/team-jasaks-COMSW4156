@@ -1,0 +1,1845 @@
+{
+  "info": {
+    "name": "Jasaks API",
+    "description": "API tests for the Jasaks space booking service. Run the requests in order: later requests reuse IDs saved by earlier ones. Before running, start the service and load postman/seed.sql. Each run creates a fresh space, so the collection can be run repeatedly against the same database.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Spaces",
+      "item": [
+        {
+          "name": "Create space",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/spaces",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "spaces"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeId\": {{placeId}},\n  \"spaceName\": \"Postman Room {{$timestamp}}\",\n  \"capacity\": 8,\n  \"hourlyRate\": 25.5,\n  \"amenities\": [\n    \"WiFi\",\n    \"whiteboard\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 201\", () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Returns a generated spaceId\", () => pm.expect(body.spaceId).to.be.a(\"number\"));",
+                  "pm.test(\"Space belongs to the seeded place\", () => pm.expect(body.placeId).to.eql(Number(pm.collectionVariables.get(\"placeId\"))));",
+                  "pm.test(\"Amenities are stored in lowercase\", () => pm.expect(body.amenities).to.include(\"wifi\"));",
+                  "pm.collectionVariables.set(\"spaceId\", body.spaceId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create space - invalid payload (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/spaces",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "spaces"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeId\": {{placeId}},\n  \"spaceName\": \"\",\n  \"capacity\": 0,\n  \"hourlyRate\": -1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create space - unknown place (404)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/spaces",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "spaces"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeId\": 999999999,\n  \"spaceName\": \"Postman Room {{$timestamp}}\",\n  \"capacity\": 8,\n  \"hourlyRate\": 25.5,\n  \"amenities\": [\n    \"WiFi\",\n    \"whiteboard\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List spaces in place",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/spaces?placeId={{placeId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "spaces"
+              ],
+              "query": [
+                {
+                  "key": "placeId",
+                  "value": "{{placeId}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Includes the new space\", () => pm.expect(pm.response.json().map(s => s.spaceId)).to.include(pm.collectionVariables.get(\"spaceId\")));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get space by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/spaces/{{spaceId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "spaces",
+                "{{spaceId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Returns the requested space\", () => pm.expect(pm.response.json().spaceId).to.eql(pm.collectionVariables.get(\"spaceId\")));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get space - not found (404)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/spaces/999999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "spaces",
+                "999999999"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get space - malformed ID (400)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/spaces/abc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "spaces",
+                "abc"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update space",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/spaces/{{spaceId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "spaces",
+                "{{spaceId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeId\": {{placeId}},\n  \"spaceName\": \"Postman Room (updated)\",\n  \"capacity\": 10,\n  \"hourlyRate\": 30.0,\n  \"amenities\": [\n    \"wifi\",\n    \"whiteboard\",\n    \"projector\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Fields are replaced\", () => {",
+                  "    pm.expect(body.spaceName).to.eql(\"Postman Room (updated)\");",
+                  "    pm.expect(body.capacity).to.eql(10);",
+                  "    pm.expect(body.hourlyRate).to.eql(30);",
+                  "    pm.expect(body.amenities).to.include(\"projector\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update space - not found (404)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/spaces/999999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "spaces",
+                "999999999"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeId\": {{placeId}},\n  \"spaceName\": \"Postman Room {{$timestamp}}\",\n  \"capacity\": 8,\n  \"hourlyRate\": 25.5,\n  \"amenities\": [\n    \"WiFi\",\n    \"whiteboard\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Search Available Spaces",
+      "item": [
+        {
+          "name": "Search available spaces",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/spaces/search?placeName={{placeName}}&startTime=2027-03-01T10:00&endTime=2027-03-01T12:00&minCapacity=4&amenities=wifi",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "spaces",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "placeName",
+                  "value": "{{placeName}}"
+                },
+                {
+                  "key": "startTime",
+                  "value": "2027-03-01T10:00"
+                },
+                {
+                  "key": "endTime",
+                  "value": "2027-03-01T12:00"
+                },
+                {
+                  "key": "minCapacity",
+                  "value": "4"
+                },
+                {
+                  "key": "amenities",
+                  "value": "wifi"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const match = pm.response.json().find(r => r.request.spaceId === pm.collectionVariables.get(\"spaceId\"));",
+                  "pm.test(\"New space is available\", () => pm.expect(match).to.exist);",
+                  "pm.test(\"Estimated price is 2 hours x 30.00\", () => pm.expect(match.estPrice).to.eql(60));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Search - startTime after endTime (400)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/spaces/search?placeName={{placeName}}&startTime=2027-03-01T12:00&endTime=2027-03-01T10:00&minCapacity=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "spaces",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "placeName",
+                  "value": "{{placeName}}"
+                },
+                {
+                  "key": "startTime",
+                  "value": "2027-03-01T12:00"
+                },
+                {
+                  "key": "endTime",
+                  "value": "2027-03-01T10:00"
+                },
+                {
+                  "key": "minCapacity",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Search - longer than 24 hours (422)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/spaces/search?placeName={{placeName}}&startTime=2027-03-01T09:00&endTime=2027-03-02T10:00&minCapacity=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "spaces",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "placeName",
+                  "value": "{{placeName}}"
+                },
+                {
+                  "key": "startTime",
+                  "value": "2027-03-01T09:00"
+                },
+                {
+                  "key": "endTime",
+                  "value": "2027-03-02T10:00"
+                },
+                {
+                  "key": "minCapacity",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 422\", () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Search - outside operating hours (422)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/spaces/search?placeName={{placeName}}&startTime=2027-03-01T06:00&endTime=2027-03-01T09:00&minCapacity=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "spaces",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "placeName",
+                  "value": "{{placeName}}"
+                },
+                {
+                  "key": "startTime",
+                  "value": "2027-03-01T06:00"
+                },
+                {
+                  "key": "endTime",
+                  "value": "2027-03-01T09:00"
+                },
+                {
+                  "key": "minCapacity",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 422\", () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Create Reservation",
+      "item": [
+        {
+          "name": "Create reservation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookerId\": \"{{bookerId}}\",\n  \"spaceId\": {{spaceId}},\n  \"startTime\": \"2027-03-01T10:00\",\n  \"endTime\": \"2027-03-01T12:00\",\n  \"groupSize\": 4\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 201\", () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Reservation is confirmed\", () => pm.expect(body.status).to.eql(\"CONFIRMED\"));",
+                  "pm.test(\"Price is 2 hours x 30.00\", () => pm.expect(body.price).to.eql(60));",
+                  "pm.collectionVariables.set(\"reservationId\", body.reservationId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create reservation - overlapping (409)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookerId\": \"{{bookerId}}\",\n  \"spaceId\": {{spaceId}},\n  \"startTime\": \"2027-03-01T11:00\",\n  \"endTime\": \"2027-03-01T13:00\",\n  \"groupSize\": 4\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 409\", () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create reservation - back-to-back is allowed",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookerId\": \"{{bookerId}}\",\n  \"spaceId\": {{spaceId}},\n  \"startTime\": \"2027-03-01T12:00\",\n  \"endTime\": \"2027-03-01T13:00\",\n  \"groupSize\": 4\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 201\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"secondReservationId\", pm.response.json().reservationId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create reservation - group exceeds capacity (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookerId\": \"{{bookerId}}\",\n  \"spaceId\": {{spaceId}},\n  \"startTime\": \"2027-03-01T14:00\",\n  \"endTime\": \"2027-03-01T15:00\",\n  \"groupSize\": 20\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create reservation - endTime before startTime (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookerId\": \"{{bookerId}}\",\n  \"spaceId\": {{spaceId}},\n  \"startTime\": \"2027-03-01T15:00\",\n  \"endTime\": \"2027-03-01T14:00\",\n  \"groupSize\": 4\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create reservation - missing fields (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookerId\": \"{{bookerId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create reservation - outside operating hours (422)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookerId\": \"{{bookerId}}\",\n  \"spaceId\": {{spaceId}},\n  \"startTime\": \"2027-03-01T21:00\",\n  \"endTime\": \"2027-03-01T23:00\",\n  \"groupSize\": 4\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 422\", () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create reservation - in the past (422)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookerId\": \"{{bookerId}}\",\n  \"spaceId\": {{spaceId}},\n  \"startTime\": \"2020-01-01T10:00\",\n  \"endTime\": \"2020-01-01T11:00\",\n  \"groupSize\": 4\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 422\", () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create reservation - unknown booker (404)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookerId\": \"no-such-booker\",\n  \"spaceId\": {{spaceId}},\n  \"startTime\": \"2027-03-01T14:00\",\n  \"endTime\": \"2027-03-01T15:00\",\n  \"groupSize\": 4\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Modify Reservation",
+      "item": [
+        {
+          "name": "Modify reservation",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations/{{reservationId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations",
+                "{{reservationId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookerId\": \"{{bookerId}}\",\n  \"startTime\": \"2027-03-01T09:00\",\n  \"groupSize\": 6\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"New start time is saved\", () => pm.expect(body.startTime).to.include(\"09:00\"));",
+                  "pm.test(\"Price is recalculated for 3 hours\", () => pm.expect(body.price).to.eql(90));",
+                  "pm.test(\"Status is unchanged\", () => pm.expect(body.status).to.eql(\"CONFIRMED\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Modify reservation - wrong booker (403)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations/{{reservationId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations",
+                "{{reservationId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookerId\": \"{{otherBookerId}}\",\n  \"groupSize\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Modify reservation - overlapping (409)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations/{{reservationId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations",
+                "{{reservationId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookerId\": \"{{bookerId}}\",\n  \"endTime\": \"2027-03-01T12:30\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 409\", () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Modify reservation - not found (404)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations/999999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations",
+                "999999999"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookerId\": \"{{bookerId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Modify reservation - missing bookerId (400)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations/{{reservationId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations",
+                "{{reservationId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"groupSize\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. List User Reservations",
+      "item": [
+        {
+          "name": "List user reservations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations?userId={{bookerId}}&startDate=2027-03-01T00:00&endDate=2027-03-02T00:00&spaceId={{spaceId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations"
+              ],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "{{bookerId}}"
+                },
+                {
+                  "key": "startDate",
+                  "value": "2027-03-01T00:00"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2027-03-02T00:00"
+                },
+                {
+                  "key": "spaceId",
+                  "value": "{{spaceId}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const ids = pm.response.json().map(r => r.reservationId);",
+                  "pm.test(\"Returns both reservations on the space\", () => {",
+                  "    pm.expect(ids).to.include(pm.collectionVariables.get(\"reservationId\"));",
+                  "    pm.expect(ids).to.include(pm.collectionVariables.get(\"secondReservationId\"));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List user reservations - blank userId (400)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations?userId=%20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations"
+              ],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "%20"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List user reservations - startDate after endDate (400)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations?userId={{bookerId}}&startDate=2027-03-02T00:00&endDate=2027-03-01T00:00",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations"
+              ],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "{{bookerId}}"
+                },
+                {
+                  "key": "startDate",
+                  "value": "2027-03-02T00:00"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2027-03-01T00:00"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6. Space Utilization Report",
+      "item": [
+        {
+          "name": "Space report",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/spaces?placeId={{placeId}}&spaceId={{spaceId}}&startDate=2027-03-01T00:00&endDate=2027-03-02T00:00",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "spaces"
+              ],
+              "query": [
+                {
+                  "key": "placeId",
+                  "value": "{{placeId}}"
+                },
+                {
+                  "key": "spaceId",
+                  "value": "{{spaceId}}"
+                },
+                {
+                  "key": "startDate",
+                  "value": "2027-03-01T00:00"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2027-03-02T00:00"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Report covers only the requested space\", () => pm.expect(body.spaces).to.have.lengthOf(1));",
+                  "pm.test(\"Counts both reservations\", () => pm.expect(body.spaces[0].totalReservations).to.eql(2));",
+                  "pm.test(\"Revenue is 90.00 + 30.00\", () => pm.expect(body.totalRevenue).to.eql(120));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Space report - startDate after endDate (400)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/spaces?placeId={{placeId}}&startDate=2027-03-02T00:00&endDate=2027-03-01T00:00",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "spaces"
+              ],
+              "query": [
+                {
+                  "key": "placeId",
+                  "value": "{{placeId}}"
+                },
+                {
+                  "key": "startDate",
+                  "value": "2027-03-02T00:00"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2027-03-01T00:00"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Space report - unknown place (404)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/spaces?placeId=999999999&startDate=2027-03-01T00:00&endDate=2027-03-02T00:00",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "spaces"
+              ],
+              "query": [
+                {
+                  "key": "placeId",
+                  "value": "999999999"
+                },
+                {
+                  "key": "startDate",
+                  "value": "2027-03-01T00:00"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2027-03-02T00:00"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "7. Cancel Reservation",
+      "item": [
+        {
+          "name": "Cancel reservation - wrong booker (403)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations/{{reservationId}}/cancel?bookerId={{otherBookerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations",
+                "{{reservationId}}",
+                "cancel"
+              ],
+              "query": [
+                {
+                  "key": "bookerId",
+                  "value": "{{otherBookerId}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancel reservation",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations/{{reservationId}}/cancel?bookerId={{bookerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations",
+                "{{reservationId}}",
+                "cancel"
+              ],
+              "query": [
+                {
+                  "key": "bookerId",
+                  "value": "{{bookerId}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Status is CANCELLED\", () => pm.expect(body.status).to.eql(\"CANCELLED\"));",
+                  "pm.test(\"Refund is 80% of 90.00\", () => pm.expect(body.refundAmount).to.eql(72));",
+                  "pm.test(\"Explains the refund\", () => pm.expect(body.refundExplanation).to.be.a(\"string\").and.not.be.empty);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancel reservation - already cancelled (409)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations/{{reservationId}}/cancel?bookerId={{bookerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations",
+                "{{reservationId}}",
+                "cancel"
+              ],
+              "query": [
+                {
+                  "key": "bookerId",
+                  "value": "{{bookerId}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 409\", () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Modify reservation - cancelled (409)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations/{{reservationId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations",
+                "{{reservationId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookerId\": \"{{bookerId}}\",\n  \"groupSize\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 409\", () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancel reservation - not found (404)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations/999999999/cancel?bookerId={{bookerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations",
+                "999999999",
+                "cancel"
+              ],
+              "query": [
+                {
+                  "key": "bookerId",
+                  "value": "{{bookerId}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "8. Delete Space",
+      "item": [
+        {
+          "name": "Delete space - has reservations (409)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/spaces/{{spaceId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "spaces",
+                "{{spaceId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 409\", () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create space to delete",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/spaces",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "spaces"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placeId\": {{placeId}},\n  \"spaceName\": \"Postman Room {{$timestamp}}\",\n  \"capacity\": 8,\n  \"hourlyRate\": 25.5,\n  \"amenities\": [\n    \"WiFi\",\n    \"whiteboard\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 201\", () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set(\"tempSpaceId\", pm.response.json().spaceId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete space",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/spaces/{{tempSpaceId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "spaces",
+                "{{tempSpaceId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get deleted space (404)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/spaces/{{tempSpaceId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "spaces",
+                "{{tempSpaceId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete space - not found (404)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/spaces/999999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "spaces",
+                "999999999"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "placeId",
+      "value": "1000"
+    },
+    {
+      "key": "placeName",
+      "value": "Postman Test Library"
+    },
+    {
+      "key": "bookerId",
+      "value": "postman-booker-1"
+    },
+    {
+      "key": "otherBookerId",
+      "value": "postman-booker-2"
+    },
+    {
+      "key": "spaceId",
+      "value": ""
+    },
+    {
+      "key": "tempSpaceId",
+      "value": ""
+    },
+    {
+      "key": "reservationId",
+      "value": ""
+    },
+    {
+      "key": "secondReservationId",
+      "value": ""
+    }
+  ]
+}
