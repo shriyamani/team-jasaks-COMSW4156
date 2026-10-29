@@ -6,6 +6,7 @@ import com.jasaks.dto.SpaceSearchRequest;
 import com.jasaks.dto.SpaceSearchResponse;
 import com.jasaks.service.SpaceService;
 import jakarta.validation.Valid;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -118,17 +120,22 @@ public class SpaceController {
     @GetMapping("/search")
     public ResponseEntity<List<SpaceSearchResponse>> getAvailableSpaces(
             @RequestParam final String placeName,
-            @RequestParam final String startTime,
-            @RequestParam final String endTime,
+            @RequestParam
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+            final LocalDateTime startTime,
+            @RequestParam
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+            final LocalDateTime endTime,
             @RequestParam final int minCapacity,
             @RequestParam(value = "amenities", required = false)
             final Set<String> amenities
             ) {
         Long placeId = spaceService.findPlaceIdByName(placeName);
-        LocalDateTime start = LocalDateTime.parse(startTime);
-        LocalDateTime end = LocalDateTime.parse(endTime);
+        if (placeId == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Place not found: " + placeName);
+        }
         SpaceSearchRequest request = new SpaceSearchRequest(
-                placeId, start, end, minCapacity, amenities);
+                placeId, startTime, endTime, minCapacity, amenities);
         return ResponseEntity.ok(spaceService.findAvailableSpaces(request));
     }
 }

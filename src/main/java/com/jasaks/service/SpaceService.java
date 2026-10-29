@@ -186,7 +186,7 @@ public class SpaceService {
         LocalDateTime end = request.endTime();
         BigDecimal minutes = BigDecimal.valueOf(
                 Duration.between(start, end).toMinutes())
-                .divide(BigDecimal.valueOf(60));
+                .divide(BigDecimal.valueOf(60), 4, RoundingMode.HALF_UP);
 
         for (Space space: spaces) {
             if (!request.amenities().isEmpty()) {
