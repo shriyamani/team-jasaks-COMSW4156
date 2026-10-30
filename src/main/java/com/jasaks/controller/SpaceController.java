@@ -132,7 +132,8 @@ public class SpaceController {
             ) {
         Long placeId = spaceService.findPlaceIdByName(placeName);
         if (placeId == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Place not found: " + placeName);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "Place not found: " + placeName);
         }
         SpaceSearchRequest request = new SpaceSearchRequest(
                 placeId, startTime, endTime, minCapacity, amenities);
