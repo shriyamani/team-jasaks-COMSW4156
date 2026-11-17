@@ -506,6 +506,35 @@ These assume the seed data above (place `1`, "Butler Library", open 08:00–22:0
 | `src/test/resources/application.properties` | Test config (H2 in-memory database) |
 | `docker-compose.yaml` | Local PostgreSQL container |
 | `checkstyle.xml` | Checkstyle ruleset |
+| `Dockerfile` | Container image for the cloud deployment |
+| `deploy.sh` | Builds and deploys the service to Google Cloud |
+
+## Cloud Deployment (GCP)
+
+The service is deployed on Google Cloud. The service URL and GCP project ID are shared with the team directly rather than published here.
+
+The first request after the service has been idle takes several seconds while a new instance starts.
+
+The cloud database is loaded with `postman/seed.sql`, so place `1000` and bookers `postman-booker-1` and `postman-booker-2` exist. To run the Postman collection against the cloud instance, replace `http://localhost:8080` with the service URL.
+
+### Architecture
+
+| Piece | GCP service | Notes |
+|---|---|---|
+| Application | Cloud Run (`jasaks-api`, `us-east1`) | Runs the image built from `Dockerfile`. Scales to zero when idle, at most 2 instances. Publicly reachable; the API has no authentication. |
+| Database | Cloud SQL, PostgreSQL 17 (`jasaks-pg`) | Smallest tier (`db-f1-micro`). Reached from Cloud Run over a private network address. |
+| Database password | Secret Manager (`jasaks-db-password`) | Generated at setup; never stored in the repo. |
+| Images | Artifact Registry (`jasaks`) | Each image is tagged with the Git commit it was built from. |
+
+The application code is the same as for local runs. Cloud Run sets the `DB_URL`, `DB_USER` and `DB_PASSWORD` environment variables that `application.properties` already reads.
+
+### Useful commands
+
+| Command | Purpose |
+|---|---|
+| `gcloud run services logs read jasaks-api --region us-east1 --project <project-id>` | View application logs |
+| `gcloud sql instances patch jasaks-pg --activation-policy=NEVER --project <project-id>` | Stop the database to save credits (the API returns errors while it is stopped) |
+| `gcloud sql instances patch jasaks-pg --activation-policy=ALWAYS --project <project-id>` | Start the database again |
 
 ## Testing
 
