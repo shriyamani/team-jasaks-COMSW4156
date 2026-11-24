@@ -26,6 +26,9 @@ import java.time.Duration;
 @Service
 public class SpaceService {
 
+    /** Maximum allowed search duration in hours. */
+    private static final int MAX_SEARCH_HOURS = 24;
+
     /** Repository for space persistence. */
     private final SpaceRepository spaceRepository;
 
@@ -164,7 +167,7 @@ public class SpaceService {
                 request.startTime(), request.endTime()).toHours())
                 .intValueExact();
 
-        if (totalHours > 24) {
+        if (totalHours > MAX_SEARCH_HOURS) {
             throw new ResponseStatusException(
                     HttpStatus.UNPROCESSABLE_CONTENT,
                     "startTime and endTime duration must be less than"
@@ -209,11 +212,21 @@ public class SpaceService {
             BigDecimal price = hourlyRate.multiply(minutes)
                     .setScale(2, RoundingMode.HALF_UP);
 
-            SpaceSearchResponse response =
-                    new SpaceSearchResponse(SpaceResponse.from(space), price);
-            available.add(response);
+            available.add(createSearchResponse(space, price));
         }
         return available;
+    }
+
+    /**
+     * Builds a search response for an available space.
+     *
+     * @param space the available space
+     * @param price the calculated price
+     * @return the search response
+     */
+    private SpaceSearchResponse createSearchResponse(
+            final Space space, final BigDecimal price) {
+        return new SpaceSearchResponse(SpaceResponse.from(space), price);
     }
 
     private Space findSpace(final Long spaceId) {

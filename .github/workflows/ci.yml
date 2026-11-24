@@ -29,10 +29,22 @@ jobs:
         if: always()
         run: ./mvnw -B checkstyle:check
 
+      - name: Run PMD
+        if: always()
+        run: ./mvnw -B pmd:pmd pmd:check
+
       - name: Upload JaCoCo report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: jacoco-report
           path: target/site/jacoco/
+          if-no-files-found: ignore
+
+      - name: Upload PMD report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pmd-report
+          path: target/reports/pmd.html
           if-no-files-found: ignore

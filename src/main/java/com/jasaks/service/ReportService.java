@@ -224,7 +224,7 @@ public class ReportService {
         final double rawUtilization = totalAvailableHours > 0.0
                 ? (totalBookedHours / totalAvailableHours) * MAX_PERCENTAGE
                 : 0.0;
-        if (rawUtilization > MAX_PERCENTAGE) {
+        if (rawUtilization > MAX_PERCENTAGE && LOGGER.isWarnEnabled()) {
             LOGGER.warn("Space {} utilization exceeded 100%: {}%",
                     space.getSpaceId(), rawUtilization);
         }
@@ -241,7 +241,7 @@ public class ReportService {
                 && totalReservations > 0)
                 ? (averageGroupSize / space.getCapacity()) * MAX_PERCENTAGE
                 : 0.0;
-        if (rawCapacityUsed > MAX_PERCENTAGE) {
+        if (rawCapacityUsed > MAX_PERCENTAGE && LOGGER.isWarnEnabled()) {
             LOGGER.warn("Space {} capacity usage exceeded 100%: {}%",
                     space.getSpaceId(), rawCapacityUsed);
         }
