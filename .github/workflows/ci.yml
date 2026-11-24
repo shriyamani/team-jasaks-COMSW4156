@@ -8,7 +8,7 @@ permissions:
 
 jobs:
   build:
-    name: Test and check style
+    name: Test, Checkstyle, and PMD
     runs-on: ubuntu-latest
 
     steps:
@@ -22,7 +22,7 @@ jobs:
           java-version: '17'
           cache: maven
 
-      - name: Run tests
+      - name: Run all tests (unit and controller tests)
         run: ./mvnw -B clean test
 
       - name: Run Checkstyle
