@@ -105,6 +105,21 @@
 					<failsOnError>true</failsOnError>
 				</configuration>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-pmd-plugin</artifactId>
+				<version>3.28.0</version>
+				<configuration>
+					<rulesets>
+						<ruleset>category/java/bestpractices.xml</ruleset>
+						<ruleset>category/java/errorprone.xml</ruleset>
+						<ruleset>category/java/performance.xml</ruleset>
+					</rulesets>
+					<linkXRef>false</linkXRef>
+					<printFailingErrors>true</printFailingErrors>
+					<failOnViolation>true</failOnViolation>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
 </project>
