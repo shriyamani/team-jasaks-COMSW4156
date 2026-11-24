@@ -18,6 +18,7 @@ import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -35,6 +36,12 @@ import org.springframework.web.server.ResponseStatusException;
  */
 @ExtendWith(MockitoExtension.class)
 public final class ReservationServiceTest {
+
+    /**
+     * Time zone used by the test places.
+     */
+    private static final ZoneId PLACE_ZONE =
+            ZoneId.of("America/New_York");
 
     /**
      * Mocked reservation repository.
@@ -204,7 +211,7 @@ public final class ReservationServiceTest {
     public void testCancelReservationSuccess() {
         reservationOne.getSpace().getPlace().setRefundHours(2);
         reservationOne.getSpace().getPlace().setRefundPercent(50);
-        reservationOne.setStartTime(LocalDateTime.now().plusHours(3));
+        reservationOne.setStartTime(LocalDateTime.now(PLACE_ZONE).plusHours(3));
 
         when(reservationRepository.findById(100L))
                 .thenReturn(Optional.of(reservationOne));
@@ -230,7 +237,7 @@ public final class ReservationServiceTest {
         reservationOne.getSpace().getPlace().setRefundHours(2);
         reservationOne.getSpace().getPlace().setRefundPercent(50);
 
-        reservationOne.setStartTime(LocalDateTime.now().plusHours(1));
+        reservationOne.setStartTime(LocalDateTime.now(PLACE_ZONE).plusHours(1));
 
         when(reservationRepository.findById(100L))
                 .thenReturn(Optional.of(reservationOne));
@@ -251,7 +258,7 @@ public final class ReservationServiceTest {
         reservationOne.getSpace().getPlace().setRefundHours(2);
         reservationOne.getSpace().getPlace().setRefundPercent(50);
 
-        reservationOne.setStartTime(LocalDateTime.now().plusHours(3));
+        reservationOne.setStartTime(LocalDateTime.now(PLACE_ZONE).plusHours(3));
 
         when(reservationRepository.findById(100L))
                 .thenReturn(Optional.of(reservationOne));
