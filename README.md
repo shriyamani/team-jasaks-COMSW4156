@@ -553,8 +553,12 @@ All of these come from `spring-boot-starter-test` in `pom.xml`. Tests run agains
 
 | Test class | What it covers |
 |---|---|
-| `src/test/java/com/jasaks/service/ReservationServiceTest.java` | Reservation service logic (list, cancel, refunds) with mocked repositories |
+| `src/test/java/com/jasaks/service/ReservationServiceTest.java` | Reservation service logic (list, create, modify, cancel, refunds) with mocked repositories |
 | `src/test/java/com/jasaks/service/ReportServiceTest.java` | Report metric calculations and validation with mocked repositories |
+| `src/test/java/com/jasaks/service/SpaceServiceTest.java` | Space CRUD and search validation with mocked repositories |
+
+The equivalence partitions covered by these service unit tests are documented
+in [`UnitTestsDocumentation.md`](UnitTestsDocumentation.md).
 | `src/test/java/com/jasaks/controller/SpaceControllerTests.java` | Space CRUD and search endpoints |
 | `src/test/java/com/jasaks/controller/CreateReservationApiTest.java` | Create Reservation endpoint |
 | `src/test/java/com/jasaks/controller/ModifyReservationApiTest.java` | Modify Reservation endpoint |
